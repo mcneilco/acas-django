@@ -8,10 +8,11 @@
 from django.db import models
 from concurrency.fields import IntegerVersionField
 from django.utils import timezone
+from django.db import connection
 
 
 class BaseModel(models.Model):
-    version = models.IntegerField()
+    version = IntegerVersionField()
     recorded_by = models.CharField(max_length=255)
     recorded_date = models.DateTimeField(default=timezone.now)
     modified_by = models.CharField(max_length=255, blank=True, null=True)
@@ -74,11 +75,25 @@ class AbstractValue(BaseModel):
         abstract = True
 
 class AbstractThing(BaseModel):
+    label_type_and_kind = "id_codeName"
     code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
 
     class Meta:
         abstract = True
 
+    def generate_code_name(self):
+        if not hasattr(self, 'thing_type_and_kind') or not self.thing_type_and_kind:
+            return  # Skip code name generation if thing_type_and_kind is not defined
+        label_sequence = LabelSequence.objects.get(
+            thing_type_and_kind=self.thing_type_and_kind,
+            label_type_and_kind=self.label_type_and_kind
+        )
+        self.code_name = label_sequence.generate_label()
+
+    def save(self, *args, **kwargs):
+        if not self.code_name:
+            self.generate_code_name()
+        super().save(*args, **kwargs)
 
 class AbstractbbchemStructure(models.Model):
     average_mol_weight = models.FloatField(blank=True, null=True)
@@ -101,6 +116,7 @@ class AbstractbbchemStructure(models.Model):
         abstract = True
 
 class AnalysisGroup(AbstractThing):
+    thing_type_and_kind = "document_analysis group"
 
     class Meta:
         db_table = 'analysis_group'
@@ -151,6 +167,7 @@ class ApplicationSetting(models.Model):
 
 
 class Author(AbstractThing):
+    thing_type_and_kind = "author_author"
     activation_date = models.DateTimeField(blank=True, null=True)
     activation_key = models.CharField(max_length=255, blank=True, null=True)
     email_address = models.CharField(unique=True, max_length=255)
@@ -326,6 +343,7 @@ class CompoundType(models.Model):
 
 
 class Container(AbstractThing):
+    thing_type_and_kind = "material_container"
     location_id = models.BigIntegerField(blank=True, null=True)
     column_index = models.IntegerField(blank=True, null=True)
     row_index = models.IntegerField(blank=True, null=True)
@@ -490,6 +508,7 @@ class DryRunCompoundMolIdxShadowHash(models.Model):
 
 
 class Experiment(AbstractThing):
+    thing_type_and_kind = "document_experiment"
     ls_type_and_kind = models.ForeignKey('ExperimentKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
     short_description = models.CharField(max_length=1024, blank=True, null=True)
     protocol = models.ForeignKey('Protocol', models.DO_NOTHING)
@@ -578,6 +597,7 @@ class FileList(models.Model):
 
 
 class FileThing(AbstractThing):
+    thing_type_and_kind = "document_file"
     application_type = models.CharField(max_length=512, blank=True, null=True)
     description = models.CharField(max_length=512, blank=True, null=True)
     file_extension = models.CharField(max_length=255, blank=True, null=True)
@@ -643,6 +663,7 @@ class Isotope(models.Model):
 
 
 class ItxContainerContainer(AbstractThing):
+    thing_type_and_kind = "interaction_containerContainer"
     first_container = models.ForeignKey(Container, models.DO_NOTHING)
     second_container = models.ForeignKey(Container, models.DO_NOTHING, related_name='itxcontainercontainer_second_container_set')
 
@@ -743,6 +764,7 @@ class ItxProtocolProtocolValue(AbstractValue):
 
 
 class ItxSubjectContainer(AbstractThing):
+    thing_type_and_kind = "interaction_subjectContainer"
     container = models.ForeignKey(Container, models.DO_NOTHING)
     subject = models.ForeignKey('Subject', models.DO_NOTHING)
 
@@ -791,6 +813,48 @@ class LabelSequence(models.Model):
         db_table = 'label_sequence'
         unique_together = (('thing_type_and_kind', 'label_type_and_kind', 'label_prefix'),)
 
+    def create_sequence(self):
+        with connection.cursor() as cursor:
+            cursor.execute(f"""
+                CREATE SEQUENCE {self.db_sequence}
+                START WITH {self.starting_number}
+                INCREMENT BY 1
+                NO MINVALUE
+                NO MAXVALUE
+                CACHE 1;
+            """)
+
+    def drop_sequence(self):
+        with connection.cursor() as cursor:
+            cursor.execute(f"DROP SEQUENCE IF EXISTS {self.db_sequence};")
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # If the object is being created
+            self.create_sequence()
+        else:  # If the object is being updated
+            old_instance = LabelSequence.objects.get(pk=self.pk)
+            if old_instance.db_sequence != self.db_sequence:
+                self.drop_sequence()
+                self.create_sequence()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.drop_sequence()
+        super().delete(*args, **kwargs)
+
+    def get_next_value(self):
+        with connection.cursor() as cursor:
+            cursor.execute(f"SELECT nextval('{self.db_sequence}')")
+            next_value = cursor.fetchone()[0]
+        return next_value
+
+    def generate_label(self):
+        next_value = self.get_next_value()
+        if self.digits:
+            next_value = str(next_value).zfill(self.digits)
+        if self.group_digits:
+            next_value = "{:,}".format(int(next_value)).replace(",", self.label_separator or "")
+        return f"{self.label_prefix}{self.label_separator or ''}{next_value}"
 
 class LabelSequenceLsRole(models.Model):
     version = IntegerVersionField()
@@ -1123,6 +1187,7 @@ class PreDefCorpName(models.Model):
 
 
 class Protocol(AbstractThing):
+    thing_type_and_kind = "document_protocol"
     ls_type_and_kind = models.ForeignKey('ProtocolKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
     short_description = models.CharField(max_length=1000, blank=True, null=True)
 
@@ -1490,6 +1555,7 @@ class StructureType(models.Model):
 
 
 class Subject(AbstractThing):
+    thing_type_and_kind = "document_subject"
     class Meta:
         db_table = 'subject'
 
@@ -1586,7 +1652,7 @@ class ThingType(models.Model):
 
 
 class TreatmentGroup(AbstractThing):
-
+    thing_type_and_kind = "document_treatment group"
     class Meta:
         db_table = 'treatment_group'
 
