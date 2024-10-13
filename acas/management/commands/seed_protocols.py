@@ -17,3 +17,5 @@ class Command(BaseCommand):
                 short_description="Test Protocol"
             )
             protocol.save()
+            # save it again to get another version number to make sure versions are working
+            protocol.save()
