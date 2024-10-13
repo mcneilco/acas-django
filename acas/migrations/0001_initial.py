@@ -375,39 +375,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='DryRunCompoundMolIdxShadow',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('tid_map', models.TextField(blank=True, null=True)),
-                ('mass', models.FloatField(blank=True, null=True)),
-                ('fragments', models.IntegerField(blank=True, null=True)),
-                ('gross', models.TextField(blank=True, null=True)),
-                ('cnt_c', models.IntegerField(blank=True, null=True)),
-                ('cnt_n', models.IntegerField(blank=True, null=True)),
-                ('cnt_o', models.IntegerField(blank=True, null=True)),
-                ('cnt_p', models.IntegerField(blank=True, null=True)),
-                ('cnt_s', models.IntegerField(blank=True, null=True)),
-                ('cnt_h', models.IntegerField(blank=True, null=True)),
-                ('xyz', models.BinaryField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'dry_run_compound_mol_idx_shadow',
-            },
-        ),
-        migrations.CreateModel(
-            name='DryRunCompoundMolIdxShadowHash',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('ex_hash', models.IntegerField(blank=True, null=True)),
-                ('f_count', models.IntegerField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'dry_run_compound_mol_idx_shadow_hash',
-            },
-        ),
-        migrations.CreateModel(
             name='ExperimentKind',
             fields=[
                 ('id', models.BigIntegerField(primary_key=True, serialize=False)),
@@ -802,39 +769,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='ParentMolIdxShadow',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('tid_map', models.TextField(blank=True, null=True)),
-                ('mass', models.FloatField(blank=True, null=True)),
-                ('fragments', models.IntegerField(blank=True, null=True)),
-                ('gross', models.TextField(blank=True, null=True)),
-                ('cnt_c', models.IntegerField(blank=True, null=True)),
-                ('cnt_n', models.IntegerField(blank=True, null=True)),
-                ('cnt_o', models.IntegerField(blank=True, null=True)),
-                ('cnt_p', models.IntegerField(blank=True, null=True)),
-                ('cnt_s', models.IntegerField(blank=True, null=True)),
-                ('cnt_h', models.IntegerField(blank=True, null=True)),
-                ('xyz', models.BinaryField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'parent_mol_idx_shadow',
-            },
-        ),
-        migrations.CreateModel(
-            name='ParentMolIdxShadowHash',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('ex_hash', models.IntegerField(blank=True, null=True)),
-                ('f_count', models.IntegerField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'parent_mol_idx_shadow_hash',
-            },
-        ),
-        migrations.CreateModel(
             name='PhysicalState',
             fields=[
                 ('id', models.BigIntegerField(primary_key=True, serialize=False)),
@@ -995,39 +929,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='SaltFormMolIdxShadow',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('tid_map', models.TextField(blank=True, null=True)),
-                ('mass', models.FloatField(blank=True, null=True)),
-                ('fragments', models.IntegerField(blank=True, null=True)),
-                ('gross', models.TextField(blank=True, null=True)),
-                ('cnt_c', models.IntegerField(blank=True, null=True)),
-                ('cnt_n', models.IntegerField(blank=True, null=True)),
-                ('cnt_o', models.IntegerField(blank=True, null=True)),
-                ('cnt_p', models.IntegerField(blank=True, null=True)),
-                ('cnt_s', models.IntegerField(blank=True, null=True)),
-                ('cnt_h', models.IntegerField(blank=True, null=True)),
-                ('xyz', models.BinaryField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'salt_form_mol_idx_shadow',
-            },
-        ),
-        migrations.CreateModel(
-            name='SaltFormMolIdxShadowHash',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('ex_hash', models.IntegerField(blank=True, null=True)),
-                ('f_count', models.IntegerField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'salt_form_mol_idx_shadow_hash',
-            },
-        ),
-        migrations.CreateModel(
             name='SaltLoader',
             fields=[
                 ('id', models.BigIntegerField(primary_key=True, serialize=False)),
@@ -1042,39 +943,6 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'salt_loader',
-            },
-        ),
-        migrations.CreateModel(
-            name='SaltMolIdxShadow',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('tid_map', models.TextField(blank=True, null=True)),
-                ('mass', models.FloatField(blank=True, null=True)),
-                ('fragments', models.IntegerField(blank=True, null=True)),
-                ('gross', models.TextField(blank=True, null=True)),
-                ('cnt_c', models.IntegerField(blank=True, null=True)),
-                ('cnt_n', models.IntegerField(blank=True, null=True)),
-                ('cnt_o', models.IntegerField(blank=True, null=True)),
-                ('cnt_p', models.IntegerField(blank=True, null=True)),
-                ('cnt_s', models.IntegerField(blank=True, null=True)),
-                ('cnt_h', models.IntegerField(blank=True, null=True)),
-                ('xyz', models.BinaryField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'salt_mol_idx_shadow',
-            },
-        ),
-        migrations.CreateModel(
-            name='SaltMolIdxShadowHash',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('b_id', models.TextField(blank=True, null=True)),
-                ('ex_hash', models.IntegerField(blank=True, null=True)),
-                ('f_count', models.IntegerField(blank=True, null=True)),
-            ],
-            options={
-                'db_table': 'salt_mol_idx_shadow_hash',
             },
         ),
         migrations.CreateModel(

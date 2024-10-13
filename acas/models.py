@@ -479,34 +479,6 @@ class DryRunCompound(models.Model):
     class Meta:
         db_table = 'dry_run_compound'
 
-
-class DryRunCompoundMolIdxShadow(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    tid_map = models.TextField(blank=True, null=True)  # This field type is a guess.
-    mass = models.FloatField(blank=True, null=True)
-    fragments = models.IntegerField(blank=True, null=True)
-    gross = models.TextField(blank=True, null=True)
-    cnt_c = models.IntegerField(blank=True, null=True)
-    cnt_n = models.IntegerField(blank=True, null=True)
-    cnt_o = models.IntegerField(blank=True, null=True)
-    cnt_p = models.IntegerField(blank=True, null=True)
-    cnt_s = models.IntegerField(blank=True, null=True)
-    cnt_h = models.IntegerField(blank=True, null=True)
-    xyz = models.BinaryField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'dry_run_compound_mol_idx_shadow'
-
-
-class DryRunCompoundMolIdxShadowHash(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    ex_hash = models.IntegerField(blank=True, null=True)
-    f_count = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'dry_run_compound_mol_idx_shadow_hash'
-
-
 class Experiment(AbstractThing):
     thing_type_and_kind = "document_experiment"
     ls_type_and_kind = models.ForeignKey('ExperimentKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
@@ -1138,33 +1110,6 @@ class ParentAnnotation(models.Model):
         db_table = 'parent_annotation'
 
 
-class ParentMolIdxShadow(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    tid_map = models.TextField(blank=True, null=True)  # This field type is a guess.
-    mass = models.FloatField(blank=True, null=True)
-    fragments = models.IntegerField(blank=True, null=True)
-    gross = models.TextField(blank=True, null=True)
-    cnt_c = models.IntegerField(blank=True, null=True)
-    cnt_n = models.IntegerField(blank=True, null=True)
-    cnt_o = models.IntegerField(blank=True, null=True)
-    cnt_p = models.IntegerField(blank=True, null=True)
-    cnt_s = models.IntegerField(blank=True, null=True)
-    cnt_h = models.IntegerField(blank=True, null=True)
-    xyz = models.BinaryField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'parent_mol_idx_shadow'
-
-
-class ParentMolIdxShadowHash(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    ex_hash = models.IntegerField(blank=True, null=True)
-    f_count = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'parent_mol_idx_shadow_hash'
-
-
 class PhysicalState(models.Model):
     code = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -1357,34 +1302,6 @@ class SaltFormAliasType(models.Model):
     class Meta:
         db_table = 'salt_form_alias_type'
 
-
-class SaltFormMolIdxShadow(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    tid_map = models.TextField(blank=True, null=True)  # This field type is a guess.
-    mass = models.FloatField(blank=True, null=True)
-    fragments = models.IntegerField(blank=True, null=True)
-    gross = models.TextField(blank=True, null=True)
-    cnt_c = models.IntegerField(blank=True, null=True)
-    cnt_n = models.IntegerField(blank=True, null=True)
-    cnt_o = models.IntegerField(blank=True, null=True)
-    cnt_p = models.IntegerField(blank=True, null=True)
-    cnt_s = models.IntegerField(blank=True, null=True)
-    cnt_h = models.IntegerField(blank=True, null=True)
-    xyz = models.BinaryField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'salt_form_mol_idx_shadow'
-
-
-class SaltFormMolIdxShadowHash(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    ex_hash = models.IntegerField(blank=True, null=True)
-    f_count = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'salt_form_mol_idx_shadow_hash'
-
-
 class SaltLoader(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
     file_name = models.CharField(max_length=255, blank=True, null=True)
@@ -1397,50 +1314,6 @@ class SaltLoader(models.Model):
 
     class Meta:
         db_table = 'salt_loader'
-
-
-class SaltMolIdxShadow(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    tid_map = models.TextField(blank=True, null=True)  # This field type is a guess.
-    mass = models.FloatField(blank=True, null=True)
-    fragments = models.IntegerField(blank=True, null=True)
-    gross = models.TextField(blank=True, null=True)
-    cnt_c = models.IntegerField(blank=True, null=True)
-    cnt_n = models.IntegerField(blank=True, null=True)
-    cnt_o = models.IntegerField(blank=True, null=True)
-    cnt_p = models.IntegerField(blank=True, null=True)
-    cnt_s = models.IntegerField(blank=True, null=True)
-    cnt_h = models.IntegerField(blank=True, null=True)
-    xyz = models.BinaryField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'salt_mol_idx_shadow'
-
-
-class SaltMolIdxShadowHash(models.Model):
-    b_id = models.TextField(blank=True, null=True)  # This field type is a guess.
-    ex_hash = models.IntegerField(blank=True, null=True)
-    f_count = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'salt_mol_idx_shadow_hash'
-
-
-class SchemaVersion(models.Model):
-    installed_rank = models.IntegerField(primary_key=True)
-    version = models.CharField(max_length=50, blank=True, null=True)
-    description = models.CharField(max_length=200)
-    type = models.CharField(max_length=20)
-    script = models.CharField(max_length=1000)
-    checksum = models.IntegerField(blank=True, null=True)
-    installed_by = models.CharField(max_length=100)
-    installed_on = models.DateTimeField()
-    execution_time = models.IntegerField()
-    success = models.BooleanField()
-
-    class Meta:
-        db_table = 'schema_version'
-
 
 class SolutionUnit(models.Model):
     code = models.CharField(max_length=255, blank=True, null=True)
