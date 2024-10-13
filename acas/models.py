@@ -9,28 +9,40 @@ from django.db import models
 from concurrency.fields import IntegerVersionField
 from django.utils import timezone
 
-class AbstractState(models.Model):
-    version = IntegerVersionField()
+
+class BaseModel(models.Model):
+    version = models.IntegerField()
     recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
+    recorded_date = models.DateTimeField(default=timezone.now)
     modified_by = models.CharField(max_length=255, blank=True, null=True)
     modified_date = models.DateTimeField(blank=True, null=True)
     ls_type = models.CharField(max_length=64)
     ls_kind = models.CharField(max_length=255)
     ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    deleted = models.BooleanField()
+    ignored = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
     ls_transaction = models.BigIntegerField(blank=True, null=True)
 
     class Meta:
         abstract = True
 
-class AbstractValue(models.Model):
-    version = IntegerVersionField()
-    ls_type = models.CharField(max_length=64)
-    ls_kind = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
+class AbstractState(BaseModel):
+    comments = models.CharField(max_length=512, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+class AbstractLabel(BaseModel):
+    label_text = models.CharField(max_length=255)
+    physically_labled = models.BooleanField(default=False)
+    image_file = models.CharField(max_length=255, blank=True, null=True)
+    preferred = models.BooleanField(default=False)
+
+    class Meta:
+        abstract = True
+
+
+class AbstractValue(BaseModel):
     code_origin = models.CharField(max_length=255, blank=True, null=True)
     code_type = models.CharField(max_length=255, blank=True, null=True)
     code_kind = models.CharField(max_length=255, blank=True, null=True)
@@ -56,17 +68,17 @@ class AbstractValue(models.Model):
     concentration = models.FloatField(blank=True, null=True)
     conc_unit = models.CharField(max_length=25, blank=True, null=True)
     comments = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField(default=False)
-    deleted = models.BooleanField(default=False)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    recorded_date = models.DateTimeField(default=timezone.now)
-    recorded_by = models.CharField(max_length=255)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
     public_data = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
+
+class AbstractThing(BaseModel):
+    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
 
 class AbstractbbchemStructure(models.Model):
     average_mol_weight = models.FloatField(blank=True, null=True)
@@ -86,23 +98,6 @@ class AbstractbbchemStructure(models.Model):
     version = IntegerVersionField()
 
     class Meta:
-        db_table = 'abstractbbchem_structure'
-
-class AbstractThing(models.Model):
-    version = models.IntegerField()
-    ls_type = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField(default=timezone.now)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    ignored = models.BooleanField(default=False)
-    deleted = models.BooleanField(default=False)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-
-    class Meta:
         abstract = True
 
 class AnalysisGroup(AbstractThing):
@@ -111,21 +106,8 @@ class AnalysisGroup(AbstractThing):
         db_table = 'analysis_group'
 
 
-class AnalysisGroupLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class AnalysisGroupLabel(AbstractLabel):
     ls_type_and_kind = models.ForeignKey('LabelKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     analysis_group = models.ForeignKey(AnalysisGroup, models.DO_NOTHING)
 
     class Meta:
@@ -183,21 +165,7 @@ class Author(AbstractThing):
         db_table = 'author'
 
 
-class AuthorLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class AuthorLabel(AbstractLabel):
     author = models.ForeignKey(Author, models.DO_NOTHING)
 
     class Meta:
@@ -376,21 +344,8 @@ class ContainerKind(models.Model):
         db_table = 'container_kind'
 
 
-class ContainerLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ContainerLabel(AbstractLabel):
     ls_type_and_kind = models.ForeignKey('LabelKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     container = models.ForeignKey(Container, models.DO_NOTHING)
 
     class Meta:
@@ -562,21 +517,8 @@ class ExperimentKind(models.Model):
         db_table = 'experiment_kind'
 
 
-class ExperimentLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ExperimentLabel(AbstractLabel):
     ls_type_and_kind = models.ForeignKey('LabelKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     experiment = models.ForeignKey(Experiment, models.DO_NOTHING)
 
     class Meta:
@@ -991,23 +933,9 @@ class LsThing(AbstractThing):
         db_table = 'ls_thing'
 
 
-class LsThingLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
-    ls_thing_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
+class LsThingLabel(AbstractLabel):
     lsthing = models.ForeignKey(LsThing, models.DO_NOTHING)
+    ls_thing_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         db_table = 'ls_thing_label'
@@ -1212,21 +1140,8 @@ class ProtocolKind(models.Model):
         db_table = 'protocol_kind'
 
 
-class ProtocolLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ProtocolLabel(AbstractLabel):
     ls_type_and_kind = models.ForeignKey(LabelKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     protocol = models.ForeignKey(Protocol, models.DO_NOTHING)
 
     class Meta:
@@ -1579,21 +1494,8 @@ class Subject(AbstractThing):
         db_table = 'subject'
 
 
-class SubjectLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class SubjectLabel(AbstractLabel):
     ls_type_and_kind = models.ForeignKey(LabelKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     subject = models.ForeignKey(Subject, models.DO_NOTHING)
 
     class Meta:
@@ -1689,21 +1591,8 @@ class TreatmentGroup(AbstractThing):
         db_table = 'treatment_group'
 
 
-class TreatmentGroupLabel(models.Model):
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    image_file = models.CharField(max_length=255, blank=True, null=True)
-    label_text = models.CharField(max_length=255)
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class TreatmentGroupLabel(AbstractLabel):
     ls_type_and_kind = models.ForeignKey(LabelKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    physically_labled = models.BooleanField()
-    preferred = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     treatment_group = models.ForeignKey(TreatmentGroup, models.DO_NOTHING)
 
     class Meta:
