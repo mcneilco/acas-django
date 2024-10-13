@@ -96,14 +96,3 @@ python manage.py runserver
 
 I then began modifying the models to match roo's inheritance (AbstractThing, AbstractValue, Abstract...etc.)
 I also added a module called django-concurrency to handle the version numbers of protocols
-
-Later I realized the django-concurrency model is an auto-incrementing integer and creates versions like this:
-
-```
-     version      
-------------------
- 1728851953400368
- 1728852214142138
- ```
-
- So may need to re-think how to do version on objects
