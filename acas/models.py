@@ -7,7 +7,7 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 from concurrency.fields import IntegerVersionField
-
+from django.utils import timezone
 
 class AbstractbbchemStructure(models.Model):
     average_mol_weight = models.FloatField(blank=True, null=True)
@@ -29,20 +29,25 @@ class AbstractbbchemStructure(models.Model):
     class Meta:
         db_table = 'abstractbbchem_structure'
 
-
-class AnalysisGroup(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
+class AbstractThing(models.Model):
+    id = models.AutoField(primary_key=True)
+    version = models.IntegerField()
     ls_type = models.CharField(max_length=255)
+    ls_kind = models.CharField(max_length=255)
     ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
+    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    recorded_by = models.CharField(max_length=255)
+    recorded_date = models.DateTimeField(default=timezone.now)
     modified_by = models.CharField(max_length=255, blank=True, null=True)
     modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+    ignored = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
+    ls_transaction = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+class AnalysisGroup(AbstractThing):
 
     class Meta:
         db_table = 'analysis_group'
@@ -153,7 +158,7 @@ class ApplicationSetting(models.Model):
         db_table = 'application_setting'
 
 
-class Author(models.Model):
+class Author(AbstractThing):
     activation_date = models.DateTimeField(blank=True, null=True)
     activation_key = models.CharField(max_length=255, blank=True, null=True)
     email_address = models.CharField(unique=True, max_length=255)
@@ -161,20 +166,8 @@ class Author(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     locked = models.BooleanField(blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
     password = models.CharField(max_length=255, blank=True, null=True)
-    recorded_date = models.DateTimeField(blank=True, null=True)
     user_name = models.CharField(unique=True, max_length=255)
-    version = IntegerVersionField()
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
 
     class Meta:
         db_table = 'author'
@@ -401,19 +394,7 @@ class CompoundType(models.Model):
         db_table = 'compound_type'
 
 
-class Container(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class Container(AbstractThing):
     location_id = models.BigIntegerField(blank=True, null=True)
     column_index = models.IntegerField(blank=True, null=True)
     row_index = models.IntegerField(blank=True, null=True)
@@ -638,19 +619,8 @@ class DryRunCompoundMolIdxShadowHash(models.Model):
         db_table = 'dry_run_compound_mol_idx_shadow_hash'
 
 
-class Experiment(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
+class Experiment(AbstractThing):
     ls_type_and_kind = models.ForeignKey('ExperimentKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     short_description = models.CharField(max_length=1024, blank=True, null=True)
     protocol = models.ForeignKey('Protocol', models.DO_NOTHING)
 
@@ -797,19 +767,7 @@ class FileList(models.Model):
         db_table = 'file_list'
 
 
-class FileThing(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class FileThing(AbstractThing):
     application_type = models.CharField(max_length=512, blank=True, null=True)
     description = models.CharField(max_length=512, blank=True, null=True)
     file_extension = models.CharField(max_length=255, blank=True, null=True)
@@ -874,19 +832,7 @@ class Isotope(models.Model):
         db_table = 'isotope'
 
 
-class ItxContainerContainer(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxContainerContainer(AbstractThing):
     first_container = models.ForeignKey(Container, models.DO_NOTHING)
     second_container = models.ForeignKey(Container, models.DO_NOTHING, related_name='itxcontainercontainer_second_container_set')
 
@@ -1040,19 +986,7 @@ class ItxExptExptValue(models.Model):
         db_table = 'itx_expt_expt_value'
 
 
-class ItxLsThingLsThing(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxLsThingLsThing(AbstractThing):
     first_ls_thing = models.ForeignKey('LsThing', models.DO_NOTHING)
     second_ls_thing = models.ForeignKey('LsThing', models.DO_NOTHING, related_name='itxlsthinglsthing_second_ls_thing_set')
 
@@ -1123,19 +1057,7 @@ class ItxLsThingLsThingValue(models.Model):
         db_table = 'itx_ls_thing_ls_thing_value'
 
 
-class ItxProtocolProtocol(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxProtocolProtocol(AbstractThing):
     first_protocol = models.ForeignKey('Protocol', models.DO_NOTHING)
     second_protocol = models.ForeignKey('Protocol', models.DO_NOTHING, related_name='itxprotocolprotocol_second_protocol_set')
 
@@ -1206,19 +1128,7 @@ class ItxProtocolProtocolValue(models.Model):
         db_table = 'itx_protocol_protocol_value'
 
 
-class ItxSubjectContainer(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxSubjectContainer(AbstractThing):
     container = models.ForeignKey(Container, models.DO_NOTHING)
     subject = models.ForeignKey('Subject', models.DO_NOTHING)
 
@@ -1423,19 +1333,7 @@ class LotAliasType(models.Model):
         db_table = 'lot_alias_type'
 
 
-class LsInteraction(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class LsInteraction(AbstractThing):
     first_thing_id = models.BigIntegerField()
     second_thing_id = models.BigIntegerField()
 
@@ -1465,20 +1363,7 @@ class LsTag(models.Model):
         db_table = 'ls_tag'
 
 
-class LsThing(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
-
+class LsThing(AbstractThing):
     class Meta:
         db_table = 'ls_thing'
 
@@ -1735,19 +1620,8 @@ class PreDefCorpName(models.Model):
         db_table = 'pre_def_corp_name'
 
 
-class Protocol(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
+class Protocol(AbstractThing):
     ls_type_and_kind = models.ForeignKey('ProtocolKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     short_description = models.CharField(max_length=1000, blank=True, null=True)
 
     class Meta:
@@ -2173,20 +2047,7 @@ class StructureType(models.Model):
         db_table = 'structure_type'
 
 
-class Subject(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
-
+class Subject(AbstractThing):
     class Meta:
         db_table = 'subject'
 
@@ -2342,19 +2203,7 @@ class ThingType(models.Model):
         db_table = 'thing_type'
 
 
-class TreatmentGroup(models.Model):
-    code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class TreatmentGroup(AbstractThing):
 
     class Meta:
         db_table = 'treatment_group'
