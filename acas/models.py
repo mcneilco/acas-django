@@ -9,6 +9,65 @@ from django.db import models
 from concurrency.fields import IntegerVersionField
 from django.utils import timezone
 
+class AbstractState(models.Model):
+    version = IntegerVersionField()
+    recorded_by = models.CharField(max_length=255)
+    recorded_date = models.DateTimeField()
+    modified_by = models.CharField(max_length=255, blank=True, null=True)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    ls_type = models.CharField(max_length=64)
+    ls_kind = models.CharField(max_length=255)
+    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
+    comments = models.CharField(max_length=512, blank=True, null=True)
+    ignored = models.BooleanField()
+    deleted = models.BooleanField()
+    ls_transaction = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+class AbstractValue(models.Model):
+    version = IntegerVersionField()
+    ls_type = models.CharField(max_length=64)
+    ls_kind = models.CharField(max_length=255)
+    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
+    code_origin = models.CharField(max_length=255, blank=True, null=True)
+    code_type = models.CharField(max_length=255, blank=True, null=True)
+    code_kind = models.CharField(max_length=255, blank=True, null=True)
+    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
+    string_value = models.CharField(max_length=255, blank=True, null=True)
+    code_value = models.CharField(max_length=255, blank=True, null=True)
+    file_value = models.CharField(max_length=512, blank=True, null=True)
+    url_value = models.CharField(max_length=2000, blank=True, null=True)
+    date_value = models.DateTimeField(blank=True, null=True)
+    clob_value = models.TextField(blank=True, null=True)
+    blob_value = models.BinaryField(blank=True, null=True)
+    operator_type = models.CharField(max_length=25, blank=True, null=True)
+    operator_kind = models.CharField(max_length=10, blank=True, null=True)
+    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
+    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
+    sig_figs = models.IntegerField(blank=True, null=True)
+    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
+    number_of_replicates = models.IntegerField(blank=True, null=True)
+    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
+    unit_type = models.CharField(max_length=25, blank=True, null=True)
+    unit_kind = models.CharField(max_length=25, blank=True, null=True)
+    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
+    concentration = models.FloatField(blank=True, null=True)
+    conc_unit = models.CharField(max_length=25, blank=True, null=True)
+    comments = models.CharField(max_length=512, blank=True, null=True)
+    ignored = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
+    ls_transaction = models.BigIntegerField(blank=True, null=True)
+    recorded_date = models.DateTimeField(default=timezone.now)
+    recorded_by = models.CharField(max_length=255)
+    modified_date = models.DateTimeField(blank=True, null=True)
+    modified_by = models.CharField(max_length=255, blank=True, null=True)
+    public_data = models.BooleanField(default=False)
+
+    class Meta:
+        abstract = True
+
 class AbstractbbchemStructure(models.Model):
     average_mol_weight = models.FloatField(blank=True, null=True)
     exact_mol_weight = models.FloatField(blank=True, null=True)
@@ -30,7 +89,6 @@ class AbstractbbchemStructure(models.Model):
         db_table = 'abstractbbchem_structure'
 
 class AbstractThing(models.Model):
-    id = models.AutoField(primary_key=True)
     version = models.IntegerField()
     ls_type = models.CharField(max_length=255)
     ls_kind = models.CharField(max_length=255)
@@ -74,63 +132,15 @@ class AnalysisGroupLabel(models.Model):
         db_table = 'analysis_group_label'
 
 
-class AnalysisGroupState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class AnalysisGroupState(AbstractState):
     analysis_group = models.ForeignKey(AnalysisGroup, models.DO_NOTHING)
 
     class Meta:
         db_table = 'analysis_group_state'
 
 
-class AnalysisGroupValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class AnalysisGroupValue(AbstractValue):
     ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
     analysis_state = models.ForeignKey(AnalysisGroupState, models.DO_NOTHING)
 
     class Meta:
@@ -204,63 +214,16 @@ class AuthorRole(models.Model):
         unique_together = (('author', 'lsrole'), ('author', 'lsrole'),)
 
 
-class AuthorState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class AuthorState(AbstractState):
     ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     author = models.ForeignKey(Author, models.DO_NOTHING)
 
     class Meta:
         db_table = 'author_state'
 
 
-class AuthorValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class AuthorValue(AbstractValue):
     ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
     author_state = models.ForeignKey(AuthorState, models.DO_NOTHING)
 
     class Meta:
@@ -434,19 +397,8 @@ class ContainerLabel(models.Model):
         db_table = 'container_label'
 
 
-class ContainerState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ContainerState(AbstractState):
     ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     container = models.ForeignKey(Container, models.DO_NOTHING)
 
     class Meta:
@@ -461,44 +413,7 @@ class ContainerType(models.Model):
         db_table = 'container_type'
 
 
-class ContainerValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class ContainerValue(AbstractValue):
     container_state = models.ForeignKey(ContainerState, models.DO_NOTHING)
 
     class Meta:
@@ -668,19 +583,8 @@ class ExperimentLabel(models.Model):
         db_table = 'experiment_label'
 
 
-class ExperimentState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ExperimentState(AbstractState):
     ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     experiment = models.ForeignKey(Experiment, models.DO_NOTHING)
 
     class Meta:
@@ -704,44 +608,8 @@ class ExperimentType(models.Model):
         db_table = 'experiment_type'
 
 
-class ExperimentValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ExperimentValue(AbstractValue):
     ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
     experiment_state = models.ForeignKey(ExperimentState, models.DO_NOTHING)
 
     class Meta:
@@ -840,63 +708,14 @@ class ItxContainerContainer(AbstractThing):
         db_table = 'itx_container_container'
 
 
-class ItxContainerContainerState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxContainerContainerState(AbstractState):
     itx_container_container = models.ForeignKey(ItxContainerContainer, models.DO_NOTHING, db_column='itx_container_container', blank=True, null=True)
 
     class Meta:
         db_table = 'itx_container_container_state'
 
 
-class ItxContainerContainerValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class ItxContainerContainerValue(AbstractValue):
     ls_state = models.ForeignKey(ItxContainerContainerState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
 
     class Meta:
@@ -923,63 +742,14 @@ class ItxExptExpt(models.Model):
         db_table = 'itx_expt_expt'
 
 
-class ItxExptExptState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxExptExptState(AbstractState):
     itx_experiment_experiment = models.ForeignKey(ItxExptExpt, models.DO_NOTHING, db_column='itx_experiment_experiment', blank=True, null=True)
 
     class Meta:
         db_table = 'itx_expt_expt_state'
 
 
-class ItxExptExptValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class ItxExptExptValue(AbstractValue):
     ls_state = models.ForeignKey(ItxExptExptState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
 
     class Meta:
@@ -994,63 +764,14 @@ class ItxLsThingLsThing(AbstractThing):
         db_table = 'itx_ls_thing_ls_thing'
 
 
-class ItxLsThingLsThingState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxLsThingLsThingState(AbstractState):
     itx_ls_thing_ls_thing = models.ForeignKey(ItxLsThingLsThing, models.DO_NOTHING, db_column='itx_ls_thing_ls_thing', blank=True, null=True)
 
     class Meta:
         db_table = 'itx_ls_thing_ls_thing_state'
 
 
-class ItxLsThingLsThingValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class ItxLsThingLsThingValue(AbstractValue):
     ls_state = models.ForeignKey(ItxLsThingLsThingState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
 
     class Meta:
@@ -1065,63 +786,14 @@ class ItxProtocolProtocol(AbstractThing):
         db_table = 'itx_protocol_protocol'
 
 
-class ItxProtocolProtocolState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxProtocolProtocolState(AbstractState):
     itx_protocol_protocol = models.ForeignKey(ItxProtocolProtocol, models.DO_NOTHING, db_column='itx_protocol_protocol', blank=True, null=True)
 
     class Meta:
         db_table = 'itx_protocol_protocol_state'
 
 
-class ItxProtocolProtocolValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class ItxProtocolProtocolValue(AbstractValue):
     ls_state = models.ForeignKey(ItxProtocolProtocolState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
 
     class Meta:
@@ -1136,63 +808,14 @@ class ItxSubjectContainer(AbstractThing):
         db_table = 'itx_subject_container'
 
 
-class ItxSubjectContainerState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class ItxSubjectContainerState(AbstractState):
     itx_subject_container = models.ForeignKey(ItxSubjectContainer, models.DO_NOTHING, db_column='itx_subject_container', blank=True, null=True)
 
     class Meta:
         db_table = 'itx_subject_container_state'
 
 
-class ItxSubjectContainerValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class ItxSubjectContainerValue(AbstractValue):
     ls_state = models.ForeignKey(ItxSubjectContainerState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
 
     class Meta:
@@ -1390,63 +1013,14 @@ class LsThingLabel(models.Model):
         db_table = 'ls_thing_label'
 
 
-class LsThingState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
+class LsThingState(AbstractState):
     lsthing = models.ForeignKey(LsThing, models.DO_NOTHING)
 
     class Meta:
         db_table = 'ls_thing_state'
 
 
-class LsThingValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
+class LsThingValue(AbstractValue):
     lsthing_state = models.ForeignKey(LsThingState, models.DO_NOTHING)
 
     class Meta:
@@ -1659,19 +1233,8 @@ class ProtocolLabel(models.Model):
         db_table = 'protocol_label'
 
 
-class ProtocolState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ProtocolState(AbstractState):
     ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     protocol = models.ForeignKey(Protocol, models.DO_NOTHING)
 
     class Meta:
@@ -1695,44 +1258,8 @@ class ProtocolType(models.Model):
         db_table = 'protocol_type'
 
 
-class ProtocolValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class ProtocolValue(AbstractValue):
     ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
     protocol_state = models.ForeignKey(ProtocolState, models.DO_NOTHING)
 
     class Meta:
@@ -2073,63 +1600,16 @@ class SubjectLabel(models.Model):
         db_table = 'subject_label'
 
 
-class SubjectState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class SubjectState(AbstractState):
     ls_type_and_kind = models.ForeignKey(StateKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     subject = models.ForeignKey(Subject, models.DO_NOTHING)
 
     class Meta:
         db_table = 'subject_state'
 
 
-class SubjectValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class SubjectValue(AbstractValue):
     ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
     subject_state = models.ForeignKey(SubjectState, models.DO_NOTHING)
 
     class Meta:
@@ -2230,63 +1710,16 @@ class TreatmentGroupLabel(models.Model):
         db_table = 'treatment_group_label'
 
 
-class TreatmentGroupState(models.Model):
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    deleted = models.BooleanField()
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class TreatmentGroupState(AbstractState):
     ls_type_and_kind = models.ForeignKey(StateKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    version = IntegerVersionField()
     treatment_group = models.ForeignKey(TreatmentGroup, models.DO_NOTHING)
 
     class Meta:
         db_table = 'treatment_group_state'
 
 
-class TreatmentGroupValue(models.Model):
-    blob_value = models.BinaryField(blank=True, null=True)
-    clob_value = models.TextField(blank=True, null=True)
-    code_kind = models.CharField(max_length=255, blank=True, null=True)
-    code_origin = models.CharField(max_length=255, blank=True, null=True)
-    code_type = models.CharField(max_length=255, blank=True, null=True)
-    code_type_and_kind = models.CharField(max_length=350, blank=True, null=True)
-    code_value = models.CharField(max_length=255, blank=True, null=True)
-    comments = models.CharField(max_length=512, blank=True, null=True)
-    conc_unit = models.CharField(max_length=25, blank=True, null=True)
-    concentration = models.FloatField(blank=True, null=True)
-    date_value = models.DateTimeField(blank=True, null=True)
-    deleted = models.BooleanField()
-    file_value = models.CharField(max_length=512, blank=True, null=True)
-    ignored = models.BooleanField()
-    ls_kind = models.CharField(max_length=255)
-    ls_transaction = models.BigIntegerField(blank=True, null=True)
-    ls_type = models.CharField(max_length=64)
+class TreatmentGroupValue(AbstractValue):
     ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
-    modified_by = models.CharField(max_length=255, blank=True, null=True)
-    modified_date = models.DateTimeField(blank=True, null=True)
-    number_of_replicates = models.IntegerField(blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    operator_kind = models.CharField(max_length=10, blank=True, null=True)
-    operator_type = models.CharField(max_length=25, blank=True, null=True)
-    operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    public_data = models.BooleanField()
-    recorded_by = models.CharField(max_length=255)
-    recorded_date = models.DateTimeField()
-    sig_figs = models.IntegerField(blank=True, null=True)
-    string_value = models.CharField(max_length=255, blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
-    uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
-    unit_kind = models.CharField(max_length=25, blank=True, null=True)
-    unit_type = models.CharField(max_length=25, blank=True, null=True)
-    unit_type_and_kind = models.CharField(max_length=55, blank=True, null=True)
-    url_value = models.CharField(max_length=2000, blank=True, null=True)
-    version = IntegerVersionField()
     treatment_state = models.ForeignKey(TreatmentGroupState, models.DO_NOTHING)
 
     class Meta:
