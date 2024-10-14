@@ -1,0 +1,46 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+        exclude: helm/templates/
+    -   id: end-of-file-fixer
+        exclude: keys.txt
+    -   id: trailing-whitespace
+        exclude: frontend/src/stories/
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.15
+    hooks:
+      - id:
+          helmlint
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--profile", "black"]
+  - repo: https://github.com/psf/black
+    rev: 22.12.0
+    hooks:
+    -   id: black
+  - repo: local
+    hooks:
+    - id: check-helm-dependencies
+      name: check-helm-depedencies (local)
+      entry: helm/check-dependencies.sh
+      language: system
+      pass_filenames: false
+      files: Chart.yaml$
+    - id: check-migrations-created
+      name: check-migrations-created (local)
+      entry: kubectl exec deploy/django-st3 -- ./manage.py makemigrations --dry-run --check --no-input
+      language: system
+      pass_filenames: false
+      types: [python]
+      files: ^django/
+    - id: frontend-lint-staged
+      name: Run linting and formatting checks in Frontend (local)
+      entry: bash -c 'cd frontend && npx lint-staged'
+      language: system
+      pass_filenames: false
+      files: ^frontend/

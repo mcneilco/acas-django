@@ -5,10 +5,9 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
-from django.db import models
 from concurrency.fields import AutoIncVersionField
+from django.db import connection, models
 from django.utils import timezone
-from django.db import connection
 
 
 class BaseModel(models.Model):
@@ -27,11 +26,13 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+
 class AbstractState(BaseModel):
     comments = models.CharField(max_length=512, blank=True, null=True)
 
     class Meta:
         abstract = True
+
 
 class AbstractLabel(BaseModel):
     label_text = models.CharField(max_length=255)
@@ -58,9 +59,13 @@ class AbstractValue(BaseModel):
     operator_type = models.CharField(max_length=25, blank=True, null=True)
     operator_kind = models.CharField(max_length=10, blank=True, null=True)
     operator_type_and_kind = models.CharField(max_length=50, blank=True, null=True)
-    numeric_value = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
+    numeric_value = models.DecimalField(
+        max_digits=38, decimal_places=18, blank=True, null=True
+    )
     sig_figs = models.IntegerField(blank=True, null=True)
-    uncertainty = models.DecimalField(max_digits=38, decimal_places=18, blank=True, null=True)
+    uncertainty = models.DecimalField(
+        max_digits=38, decimal_places=18, blank=True, null=True
+    )
     number_of_replicates = models.IntegerField(blank=True, null=True)
     uncertainty_type = models.CharField(max_length=255, blank=True, null=True)
     unit_type = models.CharField(max_length=25, blank=True, null=True)
@@ -74,6 +79,7 @@ class AbstractValue(BaseModel):
     class Meta:
         abstract = True
 
+
 class AbstractThing(BaseModel):
     label_type_and_kind = "id_codeName"
     code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
@@ -82,11 +88,11 @@ class AbstractThing(BaseModel):
         abstract = True
 
     def generate_code_name(self):
-        if not hasattr(self, 'thing_type_and_kind') or not self.thing_type_and_kind:
+        if not hasattr(self, "thing_type_and_kind") or not self.thing_type_and_kind:
             return  # Skip code name generation if thing_type_and_kind is not defined
         label_sequence = LabelSequence.objects.get(
             thing_type_and_kind=self.thing_type_and_kind,
-            label_type_and_kind=self.label_type_and_kind
+            label_type_and_kind=self.label_type_and_kind,
         )
         self.code_name = label_sequence.generate_label()
 
@@ -94,6 +100,7 @@ class AbstractThing(BaseModel):
         if not self.code_name:
             self.generate_code_name()
         super().save(*args, **kwargs)
+
 
 class AbstractbbchemStructure(models.Model):
     average_mol_weight = models.FloatField(blank=True, null=True)
@@ -115,43 +122,60 @@ class AbstractbbchemStructure(models.Model):
     class Meta:
         abstract = True
 
+
 class AnalysisGroup(AbstractThing):
     thing_type_and_kind = "document_analysis group"
 
     class Meta:
-        db_table = 'analysis_group'
+        db_table = "analysis_group"
 
 
 class AnalysisGroupLabel(AbstractLabel):
-    ls_type_and_kind = models.ForeignKey('LabelKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "LabelKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     analysis_group = models.ForeignKey(AnalysisGroup, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'analysis_group_label'
+        db_table = "analysis_group_label"
 
 
 class AnalysisGroupState(AbstractState):
     analysis_group = models.ForeignKey(AnalysisGroup, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'analysis_group_state'
+        db_table = "analysis_group_state"
 
 
 class AnalysisGroupValue(AbstractValue):
-    ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ValueKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     analysis_state = models.ForeignKey(AnalysisGroupState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'analysis_group_value'
+        db_table = "analysis_group_value"
 
 
 class AnalysisgroupTreatmentgroup(models.Model):
-    treatment_group = models.OneToOneField('TreatmentGroup', models.DO_NOTHING, primary_key=True)  # The composite primary key (treatment_group_id, analysis_group_id) found, that is not supported. The first column is selected.
+    treatment_group = models.OneToOneField(
+        "TreatmentGroup", models.DO_NOTHING, primary_key=True
+    )  # The composite primary key (treatment_group_id, analysis_group_id) found, that is not supported. The first column is selected.
     analysis_group = models.ForeignKey(AnalysisGroup, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'analysisgroup_treatmentgroup'
-        unique_together = (('treatment_group', 'analysis_group'),)
+        db_table = "analysisgroup_treatmentgroup"
+        unique_together = (("treatment_group", "analysis_group"),)
 
 
 class ApplicationSetting(models.Model):
@@ -163,7 +187,7 @@ class ApplicationSetting(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'application_setting'
+        db_table = "application_setting"
 
 
 class Author(AbstractThing):
@@ -179,40 +203,57 @@ class Author(AbstractThing):
     user_name = models.CharField(unique=True, max_length=255)
 
     class Meta:
-        db_table = 'author'
+        db_table = "author"
 
 
 class AuthorLabel(AbstractLabel):
     author = models.ForeignKey(Author, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'author_label'
+        db_table = "author_label"
 
 
 class AuthorRole(models.Model):
     version = AutoIncVersionField()
-    lsrole = models.ForeignKey('LsRole', models.DO_NOTHING)
+    lsrole = models.ForeignKey("LsRole", models.DO_NOTHING)
     author = models.ForeignKey(Author, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'author_role'
-        unique_together = (('author', 'lsrole'), ('author', 'lsrole'),)
+        db_table = "author_role"
+        unique_together = (
+            ("author", "lsrole"),
+            ("author", "lsrole"),
+        )
 
 
 class AuthorState(AbstractState):
-    ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "StateKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     author = models.ForeignKey(Author, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'author_state'
+        db_table = "author_state"
 
 
 class AuthorValue(AbstractValue):
-    ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ValueKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     author_state = models.ForeignKey(AuthorState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'author_value'
+        db_table = "author_value"
 
 
 class BingoConfig(models.Model):
@@ -220,7 +261,7 @@ class BingoConfig(models.Model):
     cvalue = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        db_table = 'bingo_config'
+        db_table = "bingo_config"
 
 
 class BingoTauConfig(models.Model):
@@ -229,7 +270,7 @@ class BingoTauConfig(models.Model):
     tau_end = models.TextField(blank=True, null=True)
 
     class Meta:
-        db_table = 'bingo_tau_config'
+        db_table = "bingo_tau_config"
 
 
 class BulkLoadFile(models.Model):
@@ -244,7 +285,7 @@ class BulkLoadFile(models.Model):
     original_file_name = models.CharField(max_length=1000, blank=True, null=True)
 
     class Meta:
-        db_table = 'bulk_load_file'
+        db_table = "bulk_load_file"
 
 
 class BulkLoadTemplate(models.Model):
@@ -255,8 +296,8 @@ class BulkLoadTemplate(models.Model):
     ignored = models.BooleanField()
 
     class Meta:
-        db_table = 'bulk_load_template'
-        unique_together = (('template_name', 'recorded_by'),)
+        db_table = "bulk_load_template"
+        unique_together = (("template_name", "recorded_by"),)
 
 
 class ChemStructure(models.Model):
@@ -276,7 +317,7 @@ class ChemStructure(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'chem_structure'
+        db_table = "chem_structure"
 
 
 class CmpdRegAppSetting(models.Model):
@@ -288,17 +329,19 @@ class CmpdRegAppSetting(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'cmpd_reg_app_setting'
+        db_table = "cmpd_reg_app_setting"
 
 
 class CodeKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('CodeType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("CodeType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'code_kind'
+        db_table = "code_kind"
 
 
 class CodeOrigin(models.Model):
@@ -306,7 +349,7 @@ class CodeOrigin(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'code_origin'
+        db_table = "code_origin"
 
 
 class CodeType(models.Model):
@@ -314,7 +357,7 @@ class CodeType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'code_type'
+        db_table = "code_type"
 
 
 class Compound(models.Model):
@@ -328,7 +371,7 @@ class Compound(models.Model):
     modified_date = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        db_table = 'compound'
+        db_table = "compound"
 
 
 class CompoundType(models.Model):
@@ -339,7 +382,7 @@ class CompoundType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'compound_type'
+        db_table = "compound_type"
 
 
 class Container(AbstractThing):
@@ -349,33 +392,49 @@ class Container(AbstractThing):
     row_index = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        db_table = 'container'
+        db_table = "container"
 
 
 class ContainerKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('ContainerType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("ContainerType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'container_kind'
+        db_table = "container_kind"
 
 
 class ContainerLabel(AbstractLabel):
-    ls_type_and_kind = models.ForeignKey('LabelKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "LabelKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     container = models.ForeignKey(Container, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'container_label'
+        db_table = "container_label"
 
 
 class ContainerState(AbstractState):
-    ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "StateKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     container = models.ForeignKey(Container, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'container_state'
+        db_table = "container_state"
 
 
 class ContainerType(models.Model):
@@ -383,14 +442,14 @@ class ContainerType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'container_type'
+        db_table = "container_type"
 
 
 class ContainerValue(AbstractValue):
     container_state = models.ForeignKey(ContainerState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'container_value'
+        db_table = "container_value"
 
 
 class CorpName(models.Model):
@@ -400,7 +459,7 @@ class CorpName(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'corp_name'
+        db_table = "corp_name"
 
 
 class CronJob(models.Model):
@@ -420,7 +479,7 @@ class CronJob(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'cron_job'
+        db_table = "cron_job"
 
 
 class DdictKind(models.Model):
@@ -429,12 +488,14 @@ class DdictKind(models.Model):
     display_order = models.IntegerField(blank=True, null=True)
     ignored = models.BooleanField()
     ls_type = models.CharField(max_length=255, blank=True, null=True)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     name = models.CharField(max_length=255)
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'ddict_kind'
+        db_table = "ddict_kind"
 
 
 class DdictType(models.Model):
@@ -446,7 +507,7 @@ class DdictType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'ddict_type'
+        db_table = "ddict_type"
 
 
 class DdictValue(models.Model):
@@ -458,13 +519,20 @@ class DdictValue(models.Model):
     label_text = models.CharField(max_length=512)
     ls_kind = models.CharField(max_length=255)
     ls_type = models.CharField(max_length=255)
-    ls_type_and_kind = models.ForeignKey(DdictKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        DdictKind,
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     short_name = models.CharField(max_length=256, blank=True, null=True)
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'ddict_value'
-        unique_together = (('ls_type', 'ls_kind', 'short_name'),)
+        db_table = "ddict_value"
+        unique_together = (("ls_type", "ls_kind", "short_name"),)
 
 
 class DryRunCompound(models.Model):
@@ -477,60 +545,90 @@ class DryRunCompound(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'dry_run_compound'
+        db_table = "dry_run_compound"
+
 
 class Experiment(AbstractThing):
     thing_type_and_kind = "document_experiment"
-    ls_type_and_kind = models.ForeignKey('ExperimentKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ExperimentKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     short_description = models.CharField(max_length=1024, blank=True, null=True)
-    protocol = models.ForeignKey('Protocol', models.DO_NOTHING)
+    protocol = models.ForeignKey("Protocol", models.DO_NOTHING)
 
     class Meta:
-        db_table = 'experiment'
+        db_table = "experiment"
 
 
 class ExperimentAnalysisgroup(models.Model):
-    analysis_group = models.OneToOneField(AnalysisGroup, models.DO_NOTHING, primary_key=True)  # The composite primary key (analysis_group_id, experiment_id) found, that is not supported. The first column is selected.
+    analysis_group = models.OneToOneField(
+        AnalysisGroup, models.DO_NOTHING, primary_key=True
+    )  # The composite primary key (analysis_group_id, experiment_id) found, that is not supported. The first column is selected.
     experiment = models.ForeignKey(Experiment, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'experiment_analysisgroup'
-        unique_together = (('analysis_group', 'experiment'),)
+        db_table = "experiment_analysisgroup"
+        unique_together = (("analysis_group", "experiment"),)
 
 
 class ExperimentKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('ExperimentType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey(
+        "ExperimentType", models.DO_NOTHING, db_column="ls_type"
+    )
 
     class Meta:
-        db_table = 'experiment_kind'
+        db_table = "experiment_kind"
 
 
 class ExperimentLabel(AbstractLabel):
-    ls_type_and_kind = models.ForeignKey('LabelKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "LabelKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     experiment = models.ForeignKey(Experiment, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'experiment_label'
+        db_table = "experiment_label"
 
 
 class ExperimentState(AbstractState):
-    ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "StateKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     experiment = models.ForeignKey(Experiment, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'experiment_state'
+        db_table = "experiment_state"
 
 
 class ExperimentTag(models.Model):
-    experiment = models.OneToOneField(Experiment, models.DO_NOTHING, primary_key=True)  # The composite primary key (experiment_id, tag_id) found, that is not supported. The first column is selected.
-    tag = models.ForeignKey('LsTag', models.DO_NOTHING)
+    experiment = models.OneToOneField(
+        Experiment, models.DO_NOTHING, primary_key=True
+    )  # The composite primary key (experiment_id, tag_id) found, that is not supported. The first column is selected.
+    tag = models.ForeignKey("LsTag", models.DO_NOTHING)
 
     class Meta:
-        db_table = 'experiment_tag'
-        unique_together = (('experiment', 'tag'),)
+        db_table = "experiment_tag"
+        unique_together = (("experiment", "tag"),)
 
 
 class ExperimentType(models.Model):
@@ -538,15 +636,22 @@ class ExperimentType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'experiment_type'
+        db_table = "experiment_type"
 
 
 class ExperimentValue(AbstractValue):
-    ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ValueKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     experiment_state = models.ForeignKey(ExperimentState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'experiment_value'
+        db_table = "experiment_value"
 
 
 class FileList(models.Model):
@@ -561,11 +666,13 @@ class FileList(models.Model):
     uploaded = models.BooleanField(blank=True, null=True)
     url = models.CharField(max_length=255, blank=True, null=True)
     version = AutoIncVersionField()
-    lot = models.ForeignKey('Lot', models.DO_NOTHING, db_column='lot', blank=True, null=True)
+    lot = models.ForeignKey(
+        "Lot", models.DO_NOTHING, db_column="lot", blank=True, null=True
+    )
     writeup = models.TextField(blank=True, null=True)
 
     class Meta:
-        db_table = 'file_list'
+        db_table = "file_list"
 
 
 class FileThing(AbstractThing):
@@ -579,7 +686,7 @@ class FileThing(AbstractThing):
     name = models.CharField(max_length=512, blank=True, null=True)
 
     class Meta:
-        db_table = 'file_thing'
+        db_table = "file_thing"
 
 
 class FileType(models.Model):
@@ -588,17 +695,21 @@ class FileType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'file_type'
+        db_table = "file_type"
 
 
 class InteractionKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('InteractionType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey(
+        "InteractionType", models.DO_NOTHING, db_column="ls_type"
+    )
 
     class Meta:
-        db_table = 'interaction_kind'
+        db_table = "interaction_kind"
 
 
 class InteractionType(models.Model):
@@ -607,7 +718,7 @@ class InteractionType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'interaction_type'
+        db_table = "interaction_type"
 
 
 class IsoSalt(models.Model):
@@ -615,12 +726,18 @@ class IsoSalt(models.Model):
     ignore = models.BooleanField(blank=True, null=True)
     type = models.CharField(max_length=25, blank=True, null=True)
     version = AutoIncVersionField()
-    isotope = models.ForeignKey('Isotope', models.DO_NOTHING, db_column='isotope', blank=True, null=True)
-    salt = models.ForeignKey('Salt', models.DO_NOTHING, db_column='salt', blank=True, null=True)
-    salt_form = models.ForeignKey('SaltForm', models.DO_NOTHING, db_column='salt_form', blank=True, null=True)
+    isotope = models.ForeignKey(
+        "Isotope", models.DO_NOTHING, db_column="isotope", blank=True, null=True
+    )
+    salt = models.ForeignKey(
+        "Salt", models.DO_NOTHING, db_column="salt", blank=True, null=True
+    )
+    salt_form = models.ForeignKey(
+        "SaltForm", models.DO_NOTHING, db_column="salt_form", blank=True, null=True
+    )
 
     class Meta:
-        db_table = 'iso_salt'
+        db_table = "iso_salt"
 
 
 class Isotope(models.Model):
@@ -631,30 +748,46 @@ class Isotope(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'isotope'
+        db_table = "isotope"
 
 
 class ItxContainerContainer(AbstractThing):
     thing_type_and_kind = "interaction_containerContainer"
     first_container = models.ForeignKey(Container, models.DO_NOTHING)
-    second_container = models.ForeignKey(Container, models.DO_NOTHING, related_name='itxcontainercontainer_second_container_set')
+    second_container = models.ForeignKey(
+        Container,
+        models.DO_NOTHING,
+        related_name="itxcontainercontainer_second_container_set",
+    )
 
     class Meta:
-        db_table = 'itx_container_container'
+        db_table = "itx_container_container"
 
 
 class ItxContainerContainerState(AbstractState):
-    itx_container_container = models.ForeignKey(ItxContainerContainer, models.DO_NOTHING, db_column='itx_container_container', blank=True, null=True)
+    itx_container_container = models.ForeignKey(
+        ItxContainerContainer,
+        models.DO_NOTHING,
+        db_column="itx_container_container",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_container_container_state'
+        db_table = "itx_container_container_state"
 
 
 class ItxContainerContainerValue(AbstractValue):
-    ls_state = models.ForeignKey(ItxContainerContainerState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
+    ls_state = models.ForeignKey(
+        ItxContainerContainerState,
+        models.DO_NOTHING,
+        db_column="ls_state",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_container_container_value'
+        db_table = "itx_container_container_value"
 
 
 class ItxExptExpt(models.Model):
@@ -671,101 +804,159 @@ class ItxExptExpt(models.Model):
     recorded_date = models.DateTimeField()
     version = AutoIncVersionField()
     first_experiment = models.ForeignKey(Experiment, models.DO_NOTHING)
-    second_experiment = models.ForeignKey(Experiment, models.DO_NOTHING, related_name='itxexptexpt_second_experiment_set')
+    second_experiment = models.ForeignKey(
+        Experiment, models.DO_NOTHING, related_name="itxexptexpt_second_experiment_set"
+    )
 
     class Meta:
-        db_table = 'itx_expt_expt'
+        db_table = "itx_expt_expt"
 
 
 class ItxExptExptState(AbstractState):
-    itx_experiment_experiment = models.ForeignKey(ItxExptExpt, models.DO_NOTHING, db_column='itx_experiment_experiment', blank=True, null=True)
+    itx_experiment_experiment = models.ForeignKey(
+        ItxExptExpt,
+        models.DO_NOTHING,
+        db_column="itx_experiment_experiment",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_expt_expt_state'
+        db_table = "itx_expt_expt_state"
 
 
 class ItxExptExptValue(AbstractValue):
-    ls_state = models.ForeignKey(ItxExptExptState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
+    ls_state = models.ForeignKey(
+        ItxExptExptState, models.DO_NOTHING, db_column="ls_state", blank=True, null=True
+    )
 
     class Meta:
-        db_table = 'itx_expt_expt_value'
+        db_table = "itx_expt_expt_value"
 
 
 class ItxLsThingLsThing(AbstractThing):
-    first_ls_thing = models.ForeignKey('LsThing', models.DO_NOTHING)
-    second_ls_thing = models.ForeignKey('LsThing', models.DO_NOTHING, related_name='itxlsthinglsthing_second_ls_thing_set')
+    first_ls_thing = models.ForeignKey("LsThing", models.DO_NOTHING)
+    second_ls_thing = models.ForeignKey(
+        "LsThing",
+        models.DO_NOTHING,
+        related_name="itxlsthinglsthing_second_ls_thing_set",
+    )
 
     class Meta:
-        db_table = 'itx_ls_thing_ls_thing'
+        db_table = "itx_ls_thing_ls_thing"
 
 
 class ItxLsThingLsThingState(AbstractState):
-    itx_ls_thing_ls_thing = models.ForeignKey(ItxLsThingLsThing, models.DO_NOTHING, db_column='itx_ls_thing_ls_thing', blank=True, null=True)
+    itx_ls_thing_ls_thing = models.ForeignKey(
+        ItxLsThingLsThing,
+        models.DO_NOTHING,
+        db_column="itx_ls_thing_ls_thing",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_ls_thing_ls_thing_state'
+        db_table = "itx_ls_thing_ls_thing_state"
 
 
 class ItxLsThingLsThingValue(AbstractValue):
-    ls_state = models.ForeignKey(ItxLsThingLsThingState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
+    ls_state = models.ForeignKey(
+        ItxLsThingLsThingState,
+        models.DO_NOTHING,
+        db_column="ls_state",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_ls_thing_ls_thing_value'
+        db_table = "itx_ls_thing_ls_thing_value"
 
 
 class ItxProtocolProtocol(AbstractThing):
-    first_protocol = models.ForeignKey('Protocol', models.DO_NOTHING)
-    second_protocol = models.ForeignKey('Protocol', models.DO_NOTHING, related_name='itxprotocolprotocol_second_protocol_set')
+    first_protocol = models.ForeignKey("Protocol", models.DO_NOTHING)
+    second_protocol = models.ForeignKey(
+        "Protocol",
+        models.DO_NOTHING,
+        related_name="itxprotocolprotocol_second_protocol_set",
+    )
 
     class Meta:
-        db_table = 'itx_protocol_protocol'
+        db_table = "itx_protocol_protocol"
 
 
 class ItxProtocolProtocolState(AbstractState):
-    itx_protocol_protocol = models.ForeignKey(ItxProtocolProtocol, models.DO_NOTHING, db_column='itx_protocol_protocol', blank=True, null=True)
+    itx_protocol_protocol = models.ForeignKey(
+        ItxProtocolProtocol,
+        models.DO_NOTHING,
+        db_column="itx_protocol_protocol",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_protocol_protocol_state'
+        db_table = "itx_protocol_protocol_state"
 
 
 class ItxProtocolProtocolValue(AbstractValue):
-    ls_state = models.ForeignKey(ItxProtocolProtocolState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
+    ls_state = models.ForeignKey(
+        ItxProtocolProtocolState,
+        models.DO_NOTHING,
+        db_column="ls_state",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_protocol_protocol_value'
+        db_table = "itx_protocol_protocol_value"
 
 
 class ItxSubjectContainer(AbstractThing):
     thing_type_and_kind = "interaction_subjectContainer"
     container = models.ForeignKey(Container, models.DO_NOTHING)
-    subject = models.ForeignKey('Subject', models.DO_NOTHING)
+    subject = models.ForeignKey("Subject", models.DO_NOTHING)
 
     class Meta:
-        db_table = 'itx_subject_container'
+        db_table = "itx_subject_container"
 
 
 class ItxSubjectContainerState(AbstractState):
-    itx_subject_container = models.ForeignKey(ItxSubjectContainer, models.DO_NOTHING, db_column='itx_subject_container', blank=True, null=True)
+    itx_subject_container = models.ForeignKey(
+        ItxSubjectContainer,
+        models.DO_NOTHING,
+        db_column="itx_subject_container",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_subject_container_state'
+        db_table = "itx_subject_container_state"
 
 
 class ItxSubjectContainerValue(AbstractValue):
-    ls_state = models.ForeignKey(ItxSubjectContainerState, models.DO_NOTHING, db_column='ls_state', blank=True, null=True)
+    ls_state = models.ForeignKey(
+        ItxSubjectContainerState,
+        models.DO_NOTHING,
+        db_column="ls_state",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'itx_subject_container_value'
+        db_table = "itx_subject_container_value"
 
 
 class LabelKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('LabelType', models.DO_NOTHING, db_column='ls_type', blank=True, null=True)
+    ls_type = models.ForeignKey(
+        "LabelType", models.DO_NOTHING, db_column="ls_type", blank=True, null=True
+    )
 
     class Meta:
-        db_table = 'label_kind'
+        db_table = "label_kind"
 
 
 class LabelSequence(models.Model):
@@ -782,19 +973,23 @@ class LabelSequence(models.Model):
     db_sequence = models.CharField(max_length=255)
 
     class Meta:
-        db_table = 'label_sequence'
-        unique_together = (('thing_type_and_kind', 'label_type_and_kind', 'label_prefix'),)
+        db_table = "label_sequence"
+        unique_together = (
+            ("thing_type_and_kind", "label_type_and_kind", "label_prefix"),
+        )
 
     def create_sequence(self):
         with connection.cursor() as cursor:
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 CREATE SEQUENCE {self.db_sequence}
                 START WITH {self.starting_number}
                 INCREMENT BY 1
                 NO MINVALUE
                 NO MAXVALUE
                 CACHE 1;
-            """)
+            """
+            )
 
     def drop_sequence(self):
         with connection.cursor() as cursor:
@@ -825,17 +1020,23 @@ class LabelSequence(models.Model):
         if self.digits:
             next_value = str(next_value).zfill(self.digits)
         if self.group_digits:
-            next_value = "{:,}".format(int(next_value)).replace(",", self.label_separator or "")
+            next_value = "{:,}".format(int(next_value)).replace(
+                ",", self.label_separator or ""
+            )
         return f"{self.label_prefix}{self.label_separator or ''}{next_value}"
+
 
 class LabelSequenceLsRole(models.Model):
     version = AutoIncVersionField()
     label_sequence = models.ForeignKey(LabelSequence, models.DO_NOTHING)
-    ls_role = models.ForeignKey('LsRole', models.DO_NOTHING)
+    ls_role = models.ForeignKey("LsRole", models.DO_NOTHING)
 
     class Meta:
-        db_table = 'label_sequence_ls_role'
-        unique_together = (('label_sequence', 'ls_role'), ('label_sequence', 'ls_role'),)
+        db_table = "label_sequence_ls_role"
+        unique_together = (
+            ("label_sequence", "ls_role"),
+            ("label_sequence", "ls_role"),
+        )
 
 
 class LabelType(models.Model):
@@ -843,7 +1044,7 @@ class LabelType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'label_type'
+        db_table = "label_type"
 
 
 class Lot(models.Model):
@@ -872,20 +1073,65 @@ class Lot(models.Model):
     supplier_lot = models.CharField(max_length=255, blank=True, null=True)
     synthesis_date = models.DateTimeField(blank=True, null=True)
     version = AutoIncVersionField()
-    amount_units = models.ForeignKey('Unit', models.DO_NOTHING, db_column='amount_units', blank=True, null=True)
+    amount_units = models.ForeignKey(
+        "Unit", models.DO_NOTHING, db_column="amount_units", blank=True, null=True
+    )
     chemist = models.CharField(blank=True, null=True)
-    physical_state = models.ForeignKey('PhysicalState', models.DO_NOTHING, db_column='physical_state', blank=True, null=True)
+    physical_state = models.ForeignKey(
+        "PhysicalState",
+        models.DO_NOTHING,
+        db_column="physical_state",
+        blank=True,
+        null=True,
+    )
     project = models.CharField(blank=True, null=True)
-    purity_measured_by = models.ForeignKey('PurityMeasuredBy', models.DO_NOTHING, db_column='purity_measured_by', blank=True, null=True)
-    purity_operator = models.ForeignKey('Operator', models.DO_NOTHING, db_column='purity_operator', blank=True, null=True)
-    retain_units = models.ForeignKey('Unit', models.DO_NOTHING, db_column='retain_units', related_name='lot_retain_units_set', blank=True, null=True)
-    salt_form = models.ForeignKey('SaltForm', models.DO_NOTHING, db_column='salt_form', blank=True, null=True)
-    solution_amount_units = models.ForeignKey('SolutionUnit', models.DO_NOTHING, db_column='solution_amount_units', blank=True, null=True)
-    vendor = models.ForeignKey('Vendor', models.DO_NOTHING, db_column='vendor', blank=True, null=True)
+    purity_measured_by = models.ForeignKey(
+        "PurityMeasuredBy",
+        models.DO_NOTHING,
+        db_column="purity_measured_by",
+        blank=True,
+        null=True,
+    )
+    purity_operator = models.ForeignKey(
+        "Operator",
+        models.DO_NOTHING,
+        db_column="purity_operator",
+        blank=True,
+        null=True,
+    )
+    retain_units = models.ForeignKey(
+        "Unit",
+        models.DO_NOTHING,
+        db_column="retain_units",
+        related_name="lot_retain_units_set",
+        blank=True,
+        null=True,
+    )
+    salt_form = models.ForeignKey(
+        "SaltForm", models.DO_NOTHING, db_column="salt_form", blank=True, null=True
+    )
+    solution_amount_units = models.ForeignKey(
+        "SolutionUnit",
+        models.DO_NOTHING,
+        db_column="solution_amount_units",
+        blank=True,
+        null=True,
+    )
+    vendor = models.ForeignKey(
+        "Vendor", models.DO_NOTHING, db_column="vendor", blank=True, null=True
+    )
     modified_date = models.DateTimeField(blank=True, null=True)
     modified_by = models.CharField(blank=True, null=True)
-    bulk_load_file = models.ForeignKey(BulkLoadFile, models.DO_NOTHING, db_column='bulk_load_file', blank=True, null=True)
-    lambda_field = models.FloatField(db_column='lambda', blank=True, null=True)  # Field renamed because it was a Python reserved word.
+    bulk_load_file = models.ForeignKey(
+        BulkLoadFile,
+        models.DO_NOTHING,
+        db_column="bulk_load_file",
+        blank=True,
+        null=True,
+    )
+    lambda_field = models.FloatField(
+        db_column="lambda", blank=True, null=True
+    )  # Field renamed because it was a Python reserved word.
     absorbance = models.FloatField(blank=True, null=True)
     stock_solvent = models.CharField(max_length=255, blank=True, null=True)
     stock_location = models.CharField(max_length=255, blank=True, null=True)
@@ -895,17 +1141,33 @@ class Lot(models.Model):
     observed_mass_two = models.FloatField(blank=True, null=True)
     tare_weight = models.FloatField(blank=True, null=True)
     total_amount_stored = models.FloatField(blank=True, null=True)
-    tare_weight_units = models.ForeignKey('Unit', models.DO_NOTHING, db_column='tare_weight_units', related_name='lot_tare_weight_units_set', blank=True, null=True)
-    total_amount_stored_units = models.ForeignKey('Unit', models.DO_NOTHING, db_column='total_amount_stored_units', related_name='lot_total_amount_stored_units_set', blank=True, null=True)
+    tare_weight_units = models.ForeignKey(
+        "Unit",
+        models.DO_NOTHING,
+        db_column="tare_weight_units",
+        related_name="lot_tare_weight_units_set",
+        blank=True,
+        null=True,
+    )
+    total_amount_stored_units = models.ForeignKey(
+        "Unit",
+        models.DO_NOTHING,
+        db_column="total_amount_stored_units",
+        related_name="lot_total_amount_stored_units_set",
+        blank=True,
+        null=True,
+    )
     vendorid = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        db_table = 'lot'
+        db_table = "lot"
 
 
 class LotAlias(models.Model):
     version = AutoIncVersionField()
-    lot = models.ForeignKey(Lot, models.DO_NOTHING, db_column='lot', blank=True, null=True)
+    lot = models.ForeignKey(
+        Lot, models.DO_NOTHING, db_column="lot", blank=True, null=True
+    )
     alias_name = models.CharField(max_length=255, blank=True, null=True)
     ls_type = models.CharField(max_length=255, blank=True, null=True)
     ls_kind = models.CharField(max_length=255, blank=True, null=True)
@@ -914,16 +1176,18 @@ class LotAlias(models.Model):
     preferred = models.BooleanField(blank=True, null=True)
 
     class Meta:
-        db_table = 'lot_alias'
+        db_table = "lot_alias"
 
 
 class LotAliasKind(models.Model):
-    ls_type = models.ForeignKey('LotAliasType', models.DO_NOTHING, db_column='ls_type', blank=True, null=True)
+    ls_type = models.ForeignKey(
+        "LotAliasType", models.DO_NOTHING, db_column="ls_type", blank=True, null=True
+    )
     kind_name = models.CharField(max_length=255, blank=True, null=True)
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'lot_alias_kind'
+        db_table = "lot_alias_kind"
 
 
 class LotAliasType(models.Model):
@@ -931,7 +1195,7 @@ class LotAliasType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'lot_alias_type'
+        db_table = "lot_alias_type"
 
 
 class LsInteraction(AbstractThing):
@@ -939,7 +1203,7 @@ class LsInteraction(AbstractThing):
     second_thing_id = models.BigIntegerField()
 
     class Meta:
-        db_table = 'ls_interaction'
+        db_table = "ls_interaction"
 
 
 class LsRole(models.Model):
@@ -948,11 +1212,18 @@ class LsRole(models.Model):
     version = AutoIncVersionField()
     ls_type = models.CharField(max_length=64, blank=True, null=True)
     ls_kind = models.CharField(max_length=255, blank=True, null=True)
-    ls_type_and_kind = models.ForeignKey('RoleKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "RoleKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'ls_role'
-        unique_together = (('ls_type', 'ls_kind', 'role_name'),)
+        db_table = "ls_role"
+        unique_together = (("ls_type", "ls_kind", "role_name"),)
 
 
 class LsTag(models.Model):
@@ -961,12 +1232,12 @@ class LsTag(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'ls_tag'
+        db_table = "ls_tag"
 
 
 class LsThing(AbstractThing):
     class Meta:
-        db_table = 'ls_thing'
+        db_table = "ls_thing"
 
 
 class LsThingLabel(AbstractLabel):
@@ -974,21 +1245,21 @@ class LsThingLabel(AbstractLabel):
     ls_thing_type_and_kind = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        db_table = 'ls_thing_label'
+        db_table = "ls_thing_label"
 
 
 class LsThingState(AbstractState):
     lsthing = models.ForeignKey(LsThing, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'ls_thing_state'
+        db_table = "ls_thing_state"
 
 
 class LsThingValue(AbstractValue):
     lsthing_state = models.ForeignKey(LsThingState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'ls_thing_value'
+        db_table = "ls_thing_value"
 
 
 class LsTransaction(models.Model):
@@ -1000,16 +1271,18 @@ class LsTransaction(models.Model):
     type = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
-        db_table = 'ls_transaction'
+        db_table = "ls_transaction"
 
 
 class LsthingTag(models.Model):
-    lsthing = models.OneToOneField(LsThing, models.DO_NOTHING, primary_key=True)  # The composite primary key (lsthing_id, tag_id) found, that is not supported. The first column is selected.
+    lsthing = models.OneToOneField(
+        LsThing, models.DO_NOTHING, primary_key=True
+    )  # The composite primary key (lsthing_id, tag_id) found, that is not supported. The first column is selected.
     tag = models.ForeignKey(LsTag, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'lsthing_tag'
-        unique_together = (('lsthing', 'tag'),)
+        db_table = "lsthing_tag"
+        unique_together = (("lsthing", "tag"),)
 
 
 class Operator(models.Model):
@@ -1018,17 +1291,19 @@ class Operator(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'operator'
+        db_table = "operator"
 
 
 class OperatorKind(models.Model):
     kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('OperatorType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("OperatorType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'operator_kind'
+        db_table = "operator_kind"
 
 
 class OperatorType(models.Model):
@@ -1036,7 +1311,7 @@ class OperatorType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'operator_type'
+        db_table = "operator_type"
 
 
 class Parent(models.Model):
@@ -1052,24 +1327,50 @@ class Parent(models.Model):
     stereo_comment = models.CharField(max_length=1000, blank=True, null=True)
     version = AutoIncVersionField()
     chemist = models.CharField(blank=True, null=True)
-    stereo_category = models.ForeignKey('StereoCategory', models.DO_NOTHING, db_column='stereo_category', blank=True, null=True)
+    stereo_category = models.ForeignKey(
+        "StereoCategory",
+        models.DO_NOTHING,
+        db_column="stereo_category",
+        blank=True,
+        null=True,
+    )
     modified_date = models.DateTimeField(blank=True, null=True)
     modified_by = models.CharField(blank=True, null=True)
-    bulk_load_file = models.ForeignKey(BulkLoadFile, models.DO_NOTHING, db_column='bulk_load_file', blank=True, null=True)
-    parent_annotation = models.ForeignKey('ParentAnnotation', models.DO_NOTHING, db_column='parent_annotation', blank=True, null=True)
-    compound_type = models.ForeignKey(CompoundType, models.DO_NOTHING, db_column='compound_type', blank=True, null=True)
+    bulk_load_file = models.ForeignKey(
+        BulkLoadFile,
+        models.DO_NOTHING,
+        db_column="bulk_load_file",
+        blank=True,
+        null=True,
+    )
+    parent_annotation = models.ForeignKey(
+        "ParentAnnotation",
+        models.DO_NOTHING,
+        db_column="parent_annotation",
+        blank=True,
+        null=True,
+    )
+    compound_type = models.ForeignKey(
+        CompoundType,
+        models.DO_NOTHING,
+        db_column="compound_type",
+        blank=True,
+        null=True,
+    )
     comment = models.TextField(blank=True, null=True)
     exact_mass = models.FloatField(blank=True, null=True)
     registered_by = models.CharField(blank=True, null=True)
     is_mixture = models.BooleanField(blank=True, null=True)
 
     class Meta:
-        db_table = 'parent'
+        db_table = "parent"
 
 
 class ParentAlias(models.Model):
     version = AutoIncVersionField()
-    parent = models.ForeignKey(Parent, models.DO_NOTHING, db_column='parent', blank=True, null=True)
+    parent = models.ForeignKey(
+        Parent, models.DO_NOTHING, db_column="parent", blank=True, null=True
+    )
     alias_name = models.CharField(max_length=255, blank=True, null=True)
     ls_type = models.CharField(max_length=255, blank=True, null=True)
     ls_kind = models.CharField(max_length=255, blank=True, null=True)
@@ -1079,16 +1380,18 @@ class ParentAlias(models.Model):
     sort_id = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        db_table = 'parent_alias'
+        db_table = "parent_alias"
 
 
 class ParentAliasKind(models.Model):
-    ls_type = models.ForeignKey('ParentAliasType', models.DO_NOTHING, db_column='ls_type', blank=True, null=True)
+    ls_type = models.ForeignKey(
+        "ParentAliasType", models.DO_NOTHING, db_column="ls_type", blank=True, null=True
+    )
     kind_name = models.CharField(max_length=255, blank=True, null=True)
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'parent_alias_kind'
+        db_table = "parent_alias_kind"
 
 
 class ParentAliasType(models.Model):
@@ -1096,7 +1399,7 @@ class ParentAliasType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'parent_alias_type'
+        db_table = "parent_alias_type"
 
 
 class ParentAnnotation(models.Model):
@@ -1107,7 +1410,7 @@ class ParentAnnotation(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'parent_annotation'
+        db_table = "parent_annotation"
 
 
 class PhysicalState(models.Model):
@@ -1116,7 +1419,7 @@ class PhysicalState(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'physical_state'
+        db_table = "physical_state"
 
 
 class PreDefCorpName(models.Model):
@@ -1128,51 +1431,76 @@ class PreDefCorpName(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'pre_def_corp_name'
+        db_table = "pre_def_corp_name"
 
 
 class Protocol(AbstractThing):
     thing_type_and_kind = "document_protocol"
-    ls_type_and_kind = models.ForeignKey('ProtocolKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ProtocolKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     short_description = models.CharField(max_length=1000, blank=True, null=True)
 
     class Meta:
-        db_table = 'protocol'
+        db_table = "protocol"
 
 
 class ProtocolKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('ProtocolType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("ProtocolType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'protocol_kind'
+        db_table = "protocol_kind"
 
 
 class ProtocolLabel(AbstractLabel):
-    ls_type_and_kind = models.ForeignKey(LabelKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        LabelKind,
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     protocol = models.ForeignKey(Protocol, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'protocol_label'
+        db_table = "protocol_label"
 
 
 class ProtocolState(AbstractState):
-    ls_type_and_kind = models.ForeignKey('StateKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "StateKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     protocol = models.ForeignKey(Protocol, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'protocol_state'
+        db_table = "protocol_state"
 
 
 class ProtocolTag(models.Model):
-    protocol = models.OneToOneField(Protocol, models.DO_NOTHING, primary_key=True)  # The composite primary key (protocol_id, tag_id) found, that is not supported. The first column is selected.
+    protocol = models.OneToOneField(
+        Protocol, models.DO_NOTHING, primary_key=True
+    )  # The composite primary key (protocol_id, tag_id) found, that is not supported. The first column is selected.
     tag = models.ForeignKey(LsTag, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'protocol_tag'
-        unique_together = (('protocol', 'tag'),)
+        db_table = "protocol_tag"
+        unique_together = (("protocol", "tag"),)
 
 
 class ProtocolType(models.Model):
@@ -1180,15 +1508,22 @@ class ProtocolType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'protocol_type'
+        db_table = "protocol_type"
 
 
 class ProtocolValue(AbstractValue):
-    ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ValueKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     protocol_state = models.ForeignKey(ProtocolState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'protocol_value'
+        db_table = "protocol_value"
 
 
 class PurityMeasuredBy(models.Model):
@@ -1197,7 +1532,7 @@ class PurityMeasuredBy(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'purity_measured_by'
+        db_table = "purity_measured_by"
 
 
 class QcCompound(models.Model):
@@ -1218,17 +1553,17 @@ class QcCompound(models.Model):
     ignore = models.BooleanField(blank=True, null=True)
 
     class Meta:
-        db_table = 'qc_compound'
+        db_table = "qc_compound"
 
 
 class RoleKind(models.Model):
     kind_name = models.CharField(max_length=255)
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('RoleType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("RoleType", models.DO_NOTHING, db_column="ls_type")
     ls_type_and_kind = models.CharField(unique=True, max_length=255)
 
     class Meta:
-        db_table = 'role_kind'
+        db_table = "role_kind"
 
 
 class RoleType(models.Model):
@@ -1236,7 +1571,7 @@ class RoleType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'role_type'
+        db_table = "role_type"
 
 
 class Salt(models.Model):
@@ -1252,7 +1587,7 @@ class Salt(models.Model):
     charge = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        db_table = 'salt'
+        db_table = "salt"
 
 
 class SaltForm(models.Model):
@@ -1265,16 +1600,26 @@ class SaltForm(models.Model):
     salt_weight = models.FloatField(blank=True, null=True)
     version = AutoIncVersionField()
     chemist = models.CharField(blank=True, null=True)
-    parent = models.ForeignKey(Parent, models.DO_NOTHING, db_column='parent', blank=True, null=True)
-    bulk_load_file = models.ForeignKey(BulkLoadFile, models.DO_NOTHING, db_column='bulk_load_file', blank=True, null=True)
+    parent = models.ForeignKey(
+        Parent, models.DO_NOTHING, db_column="parent", blank=True, null=True
+    )
+    bulk_load_file = models.ForeignKey(
+        BulkLoadFile,
+        models.DO_NOTHING,
+        db_column="bulk_load_file",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
-        db_table = 'salt_form'
+        db_table = "salt_form"
 
 
 class SaltFormAlias(models.Model):
     version = AutoIncVersionField()
-    salt_form = models.ForeignKey(SaltForm, models.DO_NOTHING, db_column='salt_form', blank=True, null=True)
+    salt_form = models.ForeignKey(
+        SaltForm, models.DO_NOTHING, db_column="salt_form", blank=True, null=True
+    )
     alias_name = models.CharField(max_length=255, blank=True, null=True)
     ls_type = models.CharField(max_length=255, blank=True, null=True)
     ls_kind = models.CharField(max_length=255, blank=True, null=True)
@@ -1283,16 +1628,22 @@ class SaltFormAlias(models.Model):
     preferred = models.BooleanField(blank=True, null=True)
 
     class Meta:
-        db_table = 'salt_form_alias'
+        db_table = "salt_form_alias"
 
 
 class SaltFormAliasKind(models.Model):
-    ls_type = models.ForeignKey('SaltFormAliasType', models.DO_NOTHING, db_column='ls_type', blank=True, null=True)
+    ls_type = models.ForeignKey(
+        "SaltFormAliasType",
+        models.DO_NOTHING,
+        db_column="ls_type",
+        blank=True,
+        null=True,
+    )
     kind_name = models.CharField(max_length=255, blank=True, null=True)
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'salt_form_alias_kind'
+        db_table = "salt_form_alias_kind"
 
 
 class SaltFormAliasType(models.Model):
@@ -1300,7 +1651,8 @@ class SaltFormAliasType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'salt_form_alias_type'
+        db_table = "salt_form_alias_type"
+
 
 class SaltLoader(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
@@ -1313,7 +1665,8 @@ class SaltLoader(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'salt_loader'
+        db_table = "salt_loader"
+
 
 class SolutionUnit(models.Model):
     code = models.CharField(max_length=255, blank=True, null=True)
@@ -1321,7 +1674,7 @@ class SolutionUnit(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'solution_unit'
+        db_table = "solution_unit"
 
 
 class StandardizationDryRunCompound(models.Model):
@@ -1351,7 +1704,7 @@ class StandardizationDryRunCompound(models.Model):
     sync_status = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        db_table = 'standardization_dry_run_compound'
+        db_table = "standardization_dry_run_compound"
 
 
 class StandardizationHistory(models.Model):
@@ -1379,17 +1732,19 @@ class StandardizationHistory(models.Model):
     dry_run_standardization_changes_count = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        db_table = 'standardization_history'
+        db_table = "standardization_history"
 
 
 class StateKind(models.Model):
     kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('StateType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("StateType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'state_kind'
+        db_table = "state_kind"
 
 
 class StateType(models.Model):
@@ -1397,7 +1752,7 @@ class StateType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'state_type'
+        db_table = "state_type"
 
 
 class StereoCategory(models.Model):
@@ -1406,17 +1761,19 @@ class StereoCategory(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'stereo_category'
+        db_table = "stereo_category"
 
 
 class StructureKind(models.Model):
     kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('StructureType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("StructureType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'structure_kind'
+        db_table = "structure_kind"
 
 
 class StructureType(models.Model):
@@ -1424,37 +1781,59 @@ class StructureType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'structure_type'
+        db_table = "structure_type"
 
 
 class Subject(AbstractThing):
     thing_type_and_kind = "document_subject"
+
     class Meta:
-        db_table = 'subject'
+        db_table = "subject"
 
 
 class SubjectLabel(AbstractLabel):
-    ls_type_and_kind = models.ForeignKey(LabelKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        LabelKind,
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     subject = models.ForeignKey(Subject, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'subject_label'
+        db_table = "subject_label"
 
 
 class SubjectState(AbstractState):
-    ls_type_and_kind = models.ForeignKey(StateKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        StateKind,
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     subject = models.ForeignKey(Subject, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'subject_state'
+        db_table = "subject_state"
 
 
 class SubjectValue(AbstractValue):
-    ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ValueKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     subject_state = models.ForeignKey(SubjectState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'subject_value'
+        db_table = "subject_value"
 
 
 class TempSelectTable(models.Model):
@@ -1466,17 +1845,19 @@ class TempSelectTable(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'temp_select_table'
+        db_table = "temp_select_table"
 
 
 class ThingKind(models.Model):
     kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('ThingType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("ThingType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'thing_kind'
+        db_table = "thing_kind"
 
 
 class ThingPage(models.Model):
@@ -1490,11 +1871,17 @@ class ThingPage(models.Model):
     recorded_by = models.CharField(max_length=255)
     recorded_date = models.DateTimeField()
     version = AutoIncVersionField()
-    ls_transaction = models.ForeignKey(LsTransaction, models.DO_NOTHING, db_column='ls_transaction', blank=True, null=True)
+    ls_transaction = models.ForeignKey(
+        LsTransaction,
+        models.DO_NOTHING,
+        db_column="ls_transaction",
+        blank=True,
+        null=True,
+    )
     thing_id = models.BigIntegerField()
 
     class Meta:
-        db_table = 'thing_page'
+        db_table = "thing_page"
 
 
 class ThingPageArchive(models.Model):
@@ -1513,7 +1900,7 @@ class ThingPageArchive(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'thing_page_archive'
+        db_table = "thing_page_archive"
 
 
 class ThingType(models.Model):
@@ -1521,46 +1908,70 @@ class ThingType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'thing_type'
+        db_table = "thing_type"
 
 
 class TreatmentGroup(AbstractThing):
     thing_type_and_kind = "document_treatment group"
+
     class Meta:
-        db_table = 'treatment_group'
+        db_table = "treatment_group"
 
 
 class TreatmentGroupLabel(AbstractLabel):
-    ls_type_and_kind = models.ForeignKey(LabelKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        LabelKind,
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     treatment_group = models.ForeignKey(TreatmentGroup, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'treatment_group_label'
+        db_table = "treatment_group_label"
 
 
 class TreatmentGroupState(AbstractState):
-    ls_type_and_kind = models.ForeignKey(StateKind, models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        StateKind,
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     treatment_group = models.ForeignKey(TreatmentGroup, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'treatment_group_state'
+        db_table = "treatment_group_state"
 
 
 class TreatmentGroupValue(AbstractValue):
-    ls_type_and_kind = models.ForeignKey('ValueKind', models.DO_NOTHING, db_column='ls_type_and_kind', to_field='ls_type_and_kind', blank=True, null=True)
+    ls_type_and_kind = models.ForeignKey(
+        "ValueKind",
+        models.DO_NOTHING,
+        db_column="ls_type_and_kind",
+        to_field="ls_type_and_kind",
+        blank=True,
+        null=True,
+    )
     treatment_state = models.ForeignKey(TreatmentGroupState, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'treatment_group_value'
+        db_table = "treatment_group_value"
 
 
 class TreatmentgroupSubject(models.Model):
-    subject = models.OneToOneField(Subject, models.DO_NOTHING, primary_key=True)  # The composite primary key (subject_id, treatment_group_id) found, that is not supported. The first column is selected.
+    subject = models.OneToOneField(
+        Subject, models.DO_NOTHING, primary_key=True
+    )  # The composite primary key (subject_id, treatment_group_id) found, that is not supported. The first column is selected.
     treatment_group = models.ForeignKey(TreatmentGroup, models.DO_NOTHING)
 
     class Meta:
-        db_table = 'treatmentgroup_subject'
-        unique_together = (('subject', 'treatment_group'),)
+        db_table = "treatmentgroup_subject"
+        unique_together = (("subject", "treatment_group"),)
 
 
 class UncertaintyKind(models.Model):
@@ -1568,7 +1979,7 @@ class UncertaintyKind(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'uncertainty_kind'
+        db_table = "uncertainty_kind"
 
 
 class Unit(models.Model):
@@ -1577,17 +1988,19 @@ class Unit(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'unit'
+        db_table = "unit"
 
 
 class UnitKind(models.Model):
     kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('UnitType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("UnitType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'unit_kind'
+        db_table = "unit_kind"
 
 
 class UnitType(models.Model):
@@ -1595,7 +2008,7 @@ class UnitType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'unit_type'
+        db_table = "unit_type"
 
 
 class UpdateLog(models.Model):
@@ -1608,17 +2021,19 @@ class UpdateLog(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'update_log'
+        db_table = "update_log"
 
 
 class ValueKind(models.Model):
     kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
     version = AutoIncVersionField()
-    ls_type = models.ForeignKey('ValueType', models.DO_NOTHING, db_column='ls_type')
+    ls_type = models.ForeignKey("ValueType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
-        db_table = 'value_kind'
+        db_table = "value_kind"
 
 
 class ValueType(models.Model):
@@ -1626,7 +2041,7 @@ class ValueType(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'value_type'
+        db_table = "value_type"
 
 
 class Vendor(models.Model):
@@ -1635,4 +2050,4 @@ class Vendor(models.Model):
     version = AutoIncVersionField()
 
     class Meta:
-        db_table = 'vendor'
+        db_table = "vendor"
