@@ -35,7 +35,10 @@ I wrote a command to seed 1000 protocols and it can be run as a django command
 ```
 python manage.py seed_protocols
 ```
-
+- Django github actions
+```
+act -j django-tests
+```
 
 
 

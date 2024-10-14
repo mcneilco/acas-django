@@ -13,10 +13,7 @@ class Command(BaseCommand):
 
     def seed_protocols(self, n):
         for _ in range(n):
-            protocol_kind = ProtocolKind.objects.first()
-            protocol = Protocol(
-                ls_type_and_kind=protocol_kind, short_description="Test Protocol"
-            )
+            protocol = Protocol(short_description="Test Protocol")
             protocol.save()
             # save it again to get another version number to make sure versions are working
             protocol.save()

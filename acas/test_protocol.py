@@ -15,13 +15,10 @@ class ProtocolModelTest(TransactionTestCase):
     def test_protocol_creation(self):
         self.assertIsInstance(self.protocol, Protocol)
         self.assertEqual(self.protocol.short_description, "Test Protocol")
-        self.assertEqual(self.protocol.ls_type, self.protocol_kind.ls_type.type_name)
-        self.assertEqual(self.protocol.ls_kind, self.protocol_kind.kind_name)
         self.assertEqual(self.protocol.version, 1)
 
     def test_protocol_fields(self):
         self.assertEqual(self.protocol.thing_type_and_kind, "document_protocol")
-        self.assertEqual(self.protocol.ls_type_and_kind, self.protocol_kind)
         self.assertEqual(self.protocol.short_description, "Test Protocol")
 
     def test_protocol_deletion(self):
