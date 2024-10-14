@@ -1719,6 +1719,22 @@ class SaltLoader(models.Model):
         db_table = "salt_loader"
 
 
+class SchemaVersion(models.Model):
+    installed_rank = models.IntegerField(primary_key=True)
+    version = models.CharField(max_length=50, blank=True, null=True)
+    description = models.CharField(max_length=200)
+    type = models.CharField(max_length=20)
+    script = models.CharField(max_length=1000)
+    checksum = models.IntegerField(blank=True, null=True)
+    installed_by = models.CharField(max_length=100)
+    installed_on = models.DateTimeField()
+    execution_time = models.IntegerField()
+    success = models.BooleanField()
+
+    class Meta:
+        db_table = "schema_version"
+
+
 class SolutionUnit(models.Model):
     code = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
