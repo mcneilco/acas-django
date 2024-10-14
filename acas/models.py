@@ -5,6 +5,8 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+import re
+
 from concurrency.fields import AutoIncVersionField
 from django.db import connection, models
 from django.utils import timezone
@@ -82,6 +84,11 @@ class AbstractValue(BaseModel):
 
 class AbstractThing(BaseModel):
     label_type_and_kind = "id_codeName"
+    label_separator = "-"
+    label_digits = 8
+    label_starting_number = 1
+    label_prefix = None
+    label_group_digits = False
     code_name = models.CharField(unique=True, max_length=255, blank=True, null=True)
 
     class Meta:
@@ -125,6 +132,7 @@ class AbstractbbchemStructure(models.Model):
 
 class AnalysisGroup(AbstractThing):
     thing_type_and_kind = "document_analysis group"
+    label_prefix = "AG"
 
     class Meta:
         db_table = "analysis_group"
@@ -192,6 +200,7 @@ class ApplicationSetting(models.Model):
 
 class Author(AbstractThing):
     thing_type_and_kind = "author_author"
+    label_prefix = "AUTH"
     activation_date = models.DateTimeField(blank=True, null=True)
     activation_key = models.CharField(max_length=255, blank=True, null=True)
     email_address = models.CharField(unique=True, max_length=255)
@@ -387,6 +396,7 @@ class CompoundType(models.Model):
 
 class Container(AbstractThing):
     thing_type_and_kind = "material_container"
+    label_prefix = "CONT"
     location_id = models.BigIntegerField(blank=True, null=True)
     column_index = models.IntegerField(blank=True, null=True)
     row_index = models.IntegerField(blank=True, null=True)
@@ -550,6 +560,7 @@ class DryRunCompound(models.Model):
 
 class Experiment(AbstractThing):
     thing_type_and_kind = "document_experiment"
+    label_prefix = "EXPT"
     ls_type_and_kind = models.ForeignKey(
         "ExperimentKind",
         models.DO_NOTHING,
@@ -753,6 +764,7 @@ class Isotope(models.Model):
 
 class ItxContainerContainer(AbstractThing):
     thing_type_and_kind = "interaction_containerContainer"
+    label_prefix = "CITX"
     first_container = models.ForeignKey(Container, models.DO_NOTHING)
     second_container = models.ForeignKey(
         Container,
@@ -912,6 +924,7 @@ class ItxProtocolProtocolValue(AbstractValue):
 
 class ItxSubjectContainer(AbstractThing):
     thing_type_and_kind = "interaction_subjectContainer"
+    label_prefix = "SITX"
     container = models.ForeignKey(Container, models.DO_NOTHING)
     subject = models.ForeignKey("Subject", models.DO_NOTHING)
 
@@ -978,29 +991,32 @@ class LabelSequence(models.Model):
             ("thing_type_and_kind", "label_type_and_kind", "label_prefix"),
         )
 
+    def sanitize_name(self, name):
+        # Replace spaces with underscores
+        name = name.replace(" ", "_")
+        # Remove any non-alphanumeric characters except underscores
+        name = re.sub(r"[^a-zA-Z0-9_]", "", name)
+        return name
+
+    def generate_db_sequence(self):
+        sequence_name = f"labelseq_{self.label_prefix}_{self.label_type_and_kind}_{self.thing_type_and_kind}"
+        return self.sanitize_name(sequence_name)
+
     def create_sequence(self):
         with connection.cursor() as cursor:
-            cursor.execute(
-                f"""
-                CREATE SEQUENCE {self.db_sequence}
-                START WITH {self.starting_number}
-                INCREMENT BY 1
-                NO MINVALUE
-                NO MAXVALUE
-                CACHE 1;
-            """
-            )
+            cursor.execute(f"CREATE SEQUENCE IF NOT EXISTS {self.db_sequence};")
 
     def drop_sequence(self):
         with connection.cursor() as cursor:
             cursor.execute(f"DROP SEQUENCE IF EXISTS {self.db_sequence};")
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # If the object is being created
+        if not self.db_sequence:  # If db_sequence is not set, generate it
+            self.db_sequence = self.generate_db_sequence()
             self.create_sequence()
-        else:  # If the object is being updated
-            old_instance = LabelSequence.objects.get(pk=self.pk)
-            if old_instance.db_sequence != self.db_sequence:
+        else:
+            old_instance = LabelSequence.objects.filter(pk=self.pk).first()
+            if old_instance and old_instance.db_sequence != self.db_sequence:
                 self.drop_sequence()
                 self.create_sequence()
         super().save(*args, **kwargs)
@@ -1436,6 +1452,8 @@ class PreDefCorpName(models.Model):
 
 class Protocol(AbstractThing):
     thing_type_and_kind = "document_protocol"
+    label_prefix = "PROT"
+
     ls_type_and_kind = models.ForeignKey(
         "ProtocolKind",
         models.DO_NOTHING,
@@ -1786,6 +1804,7 @@ class StructureType(models.Model):
 
 class Subject(AbstractThing):
     thing_type_and_kind = "document_subject"
+    label_prefix = "SUBJ"
 
     class Meta:
         db_table = "subject"
@@ -1913,6 +1932,7 @@ class ThingType(models.Model):
 
 class TreatmentGroup(AbstractThing):
     thing_type_and_kind = "document_treatment group"
+    label_prefix = "TG"
 
     class Meta:
         db_table = "treatment_group"
