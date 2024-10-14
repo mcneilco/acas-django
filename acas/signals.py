@@ -1,7 +1,7 @@
 from django.apps import apps
 from django.db.models.signals import post_migrate
 
-from .models import AbstractThing, LabelSequence
+from .models import AbstractThing, LabelSequence, ProtocolKind, ProtocolType
 
 
 def create_label_sequences(sender, **kwargs):
@@ -25,5 +25,22 @@ def create_label_sequences(sender, **kwargs):
             )
 
 
+def create_protocol_types_kinds(sender, **kwargs):
+    # Types
+    types_kinds = [
+        {"type_name": "default", "kind_name": "default"},
+        {"type_name": "default", "kind_name": "flipr screening assay"},
+        {"type_name": "Biology", "kind_name": "Bio Activity"},
+    ]
+    for type_kind in types_kinds:
+        type_obj, created = ProtocolType.objects.get_or_create(
+            type_name=type_kind["type_name"]
+        )
+        kind_obj, created = ProtocolKind.objects.get_or_create(
+            kind_name=type_kind["kind_name"], ls_type=type_obj
+        )
+
+
 # Connect the signal handler to the post_migrate signal
 post_migrate.connect(create_label_sequences)
+post_migrate.connect(create_protocol_types_kinds)

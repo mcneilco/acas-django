@@ -48,6 +48,7 @@ class BaseModel(models.Model):
             self.modified_date = self.recorded_date
         else:
             self.modified_date = timezone.now()
+
         super(BaseModel, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -142,6 +143,28 @@ class AbstractThing(BaseModel):
         super().save(*args, **kwargs)
 
 
+class AbstractKindConstrained(models.Model):
+    class Meta:
+        abstract = True
+
+    @property
+    def kind_model(self):
+        raise NotImplementedError("Subclasses must implement the kind_model property")
+
+    def save(self, *args, **kwargs):
+        if not self.ls_type or not self.ls_kind or not self.ls_type_and_kind:
+            KindModel = self.kind_model
+            default_kind = KindModel.objects.filter(
+                ls_type_and_kind=self.default_type_and_kind
+            ).first()
+            if default_kind:
+                self.ls_type = default_kind.ls_type.type_name
+                self.ls_kind = default_kind.kind_name
+                self.ls_type_and_kind = default_kind
+
+        super().save(*args, **kwargs)
+
+
 class AbstractbbchemStructure(models.Model):
     average_mol_weight = models.FloatField(blank=True, null=True)
     exact_mol_weight = models.FloatField(blank=True, null=True)
@@ -171,7 +194,7 @@ class AnalysisGroup(AbstractThing):
         db_table = "analysis_group"
 
 
-class AnalysisGroupLabel(AbstractLabel):
+class AnalysisGroupLabel(AbstractLabel, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         "LabelKind",
         models.DO_NOTHING,
@@ -184,6 +207,10 @@ class AnalysisGroupLabel(AbstractLabel):
 
     class Meta:
         db_table = "analysis_group_label"
+
+    @property
+    def kind_model(self):
+        return LabelKind
 
 
 class AnalysisGroupState(AbstractState):
@@ -591,7 +618,7 @@ class DryRunCompound(models.Model):
         db_table = "dry_run_compound"
 
 
-class Experiment(AbstractThing):
+class Experiment(AbstractThing, AbstractKindConstrained):
     thing_type_and_kind = "document_experiment"
     label_prefix = "EXPT"
     ls_type_and_kind = models.ForeignKey(
@@ -607,6 +634,10 @@ class Experiment(AbstractThing):
 
     class Meta:
         db_table = "experiment"
+
+    @property
+    def kind_model(self):
+        return ExperimentKind
 
 
 class ExperimentAnalysisgroup(models.Model):
@@ -634,7 +665,7 @@ class ExperimentKind(models.Model):
         db_table = "experiment_kind"
 
 
-class ExperimentLabel(AbstractLabel):
+class ExperimentLabel(AbstractLabel, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         "LabelKind",
         models.DO_NOTHING,
@@ -648,8 +679,12 @@ class ExperimentLabel(AbstractLabel):
     class Meta:
         db_table = "experiment_label"
 
+    @property
+    def kind_model(self):
+        return LabelKind
 
-class ExperimentState(AbstractState):
+
+class ExperimentState(AbstractState, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         "StateKind",
         models.DO_NOTHING,
@@ -662,6 +697,10 @@ class ExperimentState(AbstractState):
 
     class Meta:
         db_table = "experiment_state"
+
+    @property
+    def kind_model(self):
+        return StateKind
 
 
 class ExperimentTag(models.Model):
@@ -683,7 +722,7 @@ class ExperimentType(models.Model):
         db_table = "experiment_type"
 
 
-class ExperimentValue(AbstractValue):
+class ExperimentValue(AbstractValue, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         "ValueKind",
         models.DO_NOTHING,
@@ -696,6 +735,10 @@ class ExperimentValue(AbstractValue):
 
     class Meta:
         db_table = "experiment_value"
+
+    @property
+    def kind_model(self):
+        return ValueKind
 
 
 class FileList(models.Model):
@@ -1255,7 +1298,7 @@ class LsInteraction(AbstractThing):
         db_table = "ls_interaction"
 
 
-class LsRole(models.Model):
+class LsRole(AbstractKindConstrained):
     role_description = models.CharField(max_length=200, blank=True, null=True)
     role_name = models.CharField(max_length=255)
     version = AutoIncVersionField()
@@ -1273,6 +1316,10 @@ class LsRole(models.Model):
     class Meta:
         db_table = "ls_role"
         unique_together = (("ls_type", "ls_kind", "role_name"),)
+
+    @property
+    def kind_model(self):
+        return RoleKind
 
 
 class LsTag(models.Model):
@@ -1483,10 +1530,10 @@ class PreDefCorpName(models.Model):
         db_table = "pre_def_corp_name"
 
 
-class Protocol(AbstractThing):
+class Protocol(AbstractThing, AbstractKindConstrained):
     thing_type_and_kind = "document_protocol"
+    default_type_and_kind = "default_default"
     label_prefix = "PROT"
-
     ls_type_and_kind = models.ForeignKey(
         "ProtocolKind",
         models.DO_NOTHING,
@@ -1500,6 +1547,10 @@ class Protocol(AbstractThing):
     class Meta:
         db_table = "protocol"
 
+    @property
+    def kind_model(self):
+        return ProtocolKind
+
 
 class ProtocolKind(models.Model):
     kind_name = models.CharField(max_length=255)
@@ -1509,11 +1560,20 @@ class ProtocolKind(models.Model):
     version = AutoIncVersionField()
     ls_type = models.ForeignKey("ProtocolType", models.DO_NOTHING, db_column="ls_type")
 
+    def __str__(self) -> str:
+        return super().__str__()
+
+    def save(self, *args, **kwargs):
+        # Set ls_type_and_kind based on the related ProtocolType instance
+        if self.ls_type:
+            self.ls_type_and_kind = f"{self.ls_type.type_name}_{self.kind_name}"
+        super(ProtocolKind, self).save(*args, **kwargs)
+
     class Meta:
         db_table = "protocol_kind"
 
 
-class ProtocolLabel(AbstractLabel):
+class ProtocolLabel(AbstractLabel, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         LabelKind,
         models.DO_NOTHING,
@@ -1526,6 +1586,10 @@ class ProtocolLabel(AbstractLabel):
 
     class Meta:
         db_table = "protocol_label"
+
+    @property
+    def kind_model(self):
+        return LabelKind
 
 
 class ProtocolState(AbstractState):
@@ -1859,7 +1923,7 @@ class Subject(AbstractThing):
         db_table = "subject"
 
 
-class SubjectLabel(AbstractLabel):
+class SubjectLabel(AbstractLabel, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         LabelKind,
         models.DO_NOTHING,
@@ -1872,6 +1936,10 @@ class SubjectLabel(AbstractLabel):
 
     class Meta:
         db_table = "subject_label"
+
+    @property
+    def kind_model(self):
+        return LabelKind
 
 
 class SubjectState(AbstractState):
@@ -1987,7 +2055,7 @@ class TreatmentGroup(AbstractThing):
         db_table = "treatment_group"
 
 
-class TreatmentGroupLabel(AbstractLabel):
+class TreatmentGroupLabel(AbstractLabel, AbstractKindConstrained):
     ls_type_and_kind = models.ForeignKey(
         LabelKind,
         models.DO_NOTHING,
@@ -2000,6 +2068,10 @@ class TreatmentGroupLabel(AbstractLabel):
 
     class Meta:
         db_table = "treatment_group_label"
+
+    @property
+    def kind_model(self):
+        return LabelKind
 
 
 class TreatmentGroupState(AbstractState):
