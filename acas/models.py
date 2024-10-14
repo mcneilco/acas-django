@@ -12,6 +12,11 @@ from django.db import connection, models
 from django.utils import timezone
 
 
+class BaseModelManger(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted=False)
+
+
 class BaseModel(models.Model):
     version = AutoIncVersionField()
     recorded_by = models.CharField(max_length=255)
@@ -25,8 +30,36 @@ class BaseModel(models.Model):
     deleted = models.BooleanField(default=False)
     ls_transaction = models.BigIntegerField(blank=True, null=True)
 
+    objects = BaseModelManger()
+    all_objects = (
+        models.Manager()
+    )  # Manager to access all objects including deleted ones
+
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        # Update modified_date and modified_by fields
+        # Check if the object is being created for the first time
+        if not self.pk:
+            # Recorded_date should already be set by the default but if not set it to now
+            if not self.recorded_date:
+                self.recorded_date = timezone.now()
+            self.modified_date = self.recorded_date
+        else:
+            self.modified_date = timezone.now()
+        super(BaseModel, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.deleted = True
+        self.ignored = True
+        self.save()
+
+    def active_objects(self):
+        return self.objects.filter(deleted=False, ignored=False)
+
+    def hard_delete(self, *args, **kwargs):
+        super(BaseModel, self).delete(*args, **kwargs)
 
 
 class AbstractState(BaseModel):
