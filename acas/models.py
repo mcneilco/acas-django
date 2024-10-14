@@ -80,6 +80,23 @@ class AbstractLabel(BaseModel):
         abstract = True
 
 
+class AbstractKind(models.Model):
+    kind_name = models.CharField(max_length=255)
+    ls_type_and_kind = models.CharField(
+        unique=True, max_length=255, blank=True, null=True
+    )
+    version = AutoIncVersionField()
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        # Set ls_type_and_kind based on the related ProtocolType instance
+        if self.ls_type:
+            self.ls_type_and_kind = f"{self.ls_type.type_name}_{self.kind_name}"
+        super().save(*args, **kwargs)
+
+
 class AbstractValue(BaseModel):
     code_origin = models.CharField(max_length=255, blank=True, null=True)
     code_type = models.CharField(max_length=255, blank=True, null=True)
@@ -401,12 +418,7 @@ class CmpdRegAppSetting(models.Model):
         db_table = "cmpd_reg_app_setting"
 
 
-class CodeKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class CodeKind(AbstractKind):
     ls_type = models.ForeignKey("CodeType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
@@ -465,12 +477,7 @@ class Container(AbstractThing):
         db_table = "container"
 
 
-class ContainerKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class ContainerKind(AbstractKind):
     ls_type = models.ForeignKey("ContainerType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
@@ -651,12 +658,7 @@ class ExperimentAnalysisgroup(models.Model):
         unique_together = (("analysis_group", "experiment"),)
 
 
-class ExperimentKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class ExperimentKind(AbstractKind):
     ls_type = models.ForeignKey(
         "ExperimentType", models.DO_NOTHING, db_column="ls_type"
     )
@@ -785,12 +787,7 @@ class FileType(models.Model):
         db_table = "file_type"
 
 
-class InteractionKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class InteractionKind(AbstractKind):
     ls_type = models.ForeignKey(
         "InteractionType", models.DO_NOTHING, db_column="ls_type"
     )
@@ -1034,12 +1031,7 @@ class ItxSubjectContainerValue(AbstractValue):
         db_table = "itx_subject_container_value"
 
 
-class LabelKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class LabelKind(AbstractKind):
     ls_type = models.ForeignKey(
         "LabelType", models.DO_NOTHING, db_column="ls_type", blank=True, null=True
     )
@@ -1552,12 +1544,7 @@ class Protocol(AbstractThing, AbstractKindConstrained):
         return ProtocolKind
 
 
-class ProtocolKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class ProtocolKind(AbstractKind):
     ls_type = models.ForeignKey("ProtocolType", models.DO_NOTHING, db_column="ls_type")
 
     def __str__(self) -> str:
@@ -1671,11 +1658,8 @@ class QcCompound(models.Model):
         db_table = "qc_compound"
 
 
-class RoleKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    version = AutoIncVersionField()
+class RoleKind(AbstractKind):
     ls_type = models.ForeignKey("RoleType", models.DO_NOTHING, db_column="ls_type")
-    ls_type_and_kind = models.CharField(unique=True, max_length=255)
 
     class Meta:
         db_table = "role_kind"
@@ -1746,7 +1730,7 @@ class SaltFormAlias(models.Model):
         db_table = "salt_form_alias"
 
 
-class SaltFormAliasKind(models.Model):
+class SaltFormAliasKind(AbstractKind):
     ls_type = models.ForeignKey(
         "SaltFormAliasType",
         models.DO_NOTHING,
@@ -1866,7 +1850,7 @@ class StandardizationHistory(models.Model):
         db_table = "standardization_history"
 
 
-class StateKind(models.Model):
+class StateKind(AbstractKind):
     kind_name = models.CharField(max_length=64)
     ls_type_and_kind = models.CharField(
         unique=True, max_length=255, blank=True, null=True
@@ -1895,7 +1879,7 @@ class StereoCategory(models.Model):
         db_table = "stereo_category"
 
 
-class StructureKind(models.Model):
+class StructureKind(AbstractKind):
     kind_name = models.CharField(max_length=64)
     ls_type_and_kind = models.CharField(
         unique=True, max_length=255, blank=True, null=True
@@ -1984,12 +1968,7 @@ class TempSelectTable(models.Model):
         db_table = "temp_select_table"
 
 
-class ThingKind(models.Model):
-    kind_name = models.CharField(max_length=255)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class ThingKind(AbstractKind):
     ls_type = models.ForeignKey("ThingType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
@@ -2115,10 +2094,7 @@ class TreatmentgroupSubject(models.Model):
         unique_together = (("subject", "treatment_group"),)
 
 
-class UncertaintyKind(models.Model):
-    kind_name = models.CharField(unique=True, max_length=255)
-    version = AutoIncVersionField()
-
+class UncertaintyKind(AbstractKind):
     class Meta:
         db_table = "uncertainty_kind"
 
@@ -2132,12 +2108,8 @@ class Unit(models.Model):
         db_table = "unit"
 
 
-class UnitKind(models.Model):
-    kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class UnitKind(AbstractKind):
+
     ls_type = models.ForeignKey("UnitType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
@@ -2165,12 +2137,8 @@ class UpdateLog(models.Model):
         db_table = "update_log"
 
 
-class ValueKind(models.Model):
-    kind_name = models.CharField(max_length=64)
-    ls_type_and_kind = models.CharField(
-        unique=True, max_length=255, blank=True, null=True
-    )
-    version = AutoIncVersionField()
+class ValueKind(AbstractKind):
+
     ls_type = models.ForeignKey("ValueType", models.DO_NOTHING, db_column="ls_type")
 
     class Meta:
